@@ -33,17 +33,9 @@ const client = new OpenAI({
     }
 });
 
-// ─── MULTIPLE FREE MODELS TO TRY ───
-// If one fails, try the next one
-const FREE_MODELS = [
-    'deepseek/deepseek-chat-v3-0324:free',  // ✅ Best free model
-    'qwen/qwen-2.5-72b-instruct:free',      // ✅ Good alternative
-    'google/gemma-2-27b-it:free',            // ✅ Another option
-    'meta-llama/llama-3.1-70b-instruct:free' // ✅ Fallback
-];
-
-// Use DeepSeek V3 (best free model currently)
-const FREE_MODEL = FREE_MODELS[0];
+// ─── CONFIRMED WORKING FREE MODEL ───
+// Qwen 2.5 72B is currently available on OpenRouter's free tier
+const FREE_MODEL = 'qwen/qwen-2.5-72b-instruct:free';
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
@@ -182,6 +174,4 @@ app.listen(PORT, () => {
     console.log(`✅ Model: ${FREE_MODEL} (FREE)`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
-    console.log(`   ℹ️  If this model doesn't work, try one of these alternatives:`);
-    console.log(`      ${FREE_MODELS.slice(1).join(', ')}`);
 });
