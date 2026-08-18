@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 const { OpenAI } = require('openai');
 
 const app = express();
@@ -11,273 +10,170 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
-// ─── CREATE PUBLIC FOLDER WITH INDEX.HTML ───
-const publicPath = path.join(__dirname, 'public');
-const indexPath = path.join(publicPath, 'index.html');
-
-console.log(`📁 Public folder path: ${publicPath}`);
-
-// Create public folder if it doesn't exist
-if (!fs.existsSync(publicPath)) {
-    console.log('📝 Creating public folder...');
-    fs.mkdirSync(publicPath, { recursive: true });
-}
-
-// Create index.html if it doesn't exist
-if (!fs.existsSync(indexPath)) {
-    console.log('📝 Creating index.html...');
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-    <title>AI Hallucination Lab</title>
-    <style>
-        body { background: #0b0b14; color: #f0edf6; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { text-align: center; padding: 2rem; background: #13131f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); max-width: 600px; }
-        h1 { color: #ff3b5c; }
-        .status { color: #2ecc71; font-weight: bold; }
-        .btn { display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #ff3b5c; color: white; border-radius: 8px; text-decoration: none; }
-        .info { color: #6f6b87; font-size: 0.8rem; margin-top: 1rem; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🧠 AI Hallucination Lab</h1>
-        <p>Server is running ✅</p>
-        <p class="status">🟢 Online</p>
-        <p class="info">Your website is being deployed. Please upload your index.html to the public folder.</p>
-        <a href="#" class="btn">Refresh</a>
-    </div>
-</body>
-</html>`;
-    fs.writeFileSync(indexPath, htmlContent);
-    console.log('✅ Created index.html');
-}
-
-// ─── SERVE STATIC FILES ───
-app.use(express.static(publicPath));
-
-// ─── API KEY ───
+// ─── YOUR NVIDIA NIM API KEY ───
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
 if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-    console.error('❌ Invalid NVIDIA NIM API key!');
+    console.error('❌ Invalid NVIDIA NIM API key! Keys must start with "nvapi-..."');
+    console.error('   Get a valid key from: https://build.nvidia.com');
 } else {
     console.log('✅ NVIDIA NIM API Key is configured');
 }
 
+// Initialize OpenAI client with NVIDIA NIM endpoint
 const client = new OpenAI({
     baseURL: 'https://integrate.api.nvidia.com/v1',
     apiKey: API_KEY,
-    defaultHeaders: { 'Content-Type': 'application/json' }
+    defaultHeaders: {
+        'Content-Type': 'application/json'
+    }
 });
 
-// ─── MODELS ───
-const FAST_MODEL = 'mistralai/mistral-small-3.1-24b-instruct';
-const ACCURATE_MODEL = 'meta/llama-3.1-70b-instruct';
+// ─── NVIDIA NIM FREE MODELS ───
+// Choose one of these:
+// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
+// 2. 'mistralai/mistral-large'       - Good quality
+// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
+const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
 
-// ─── CACHE ───
-const cache = new Map();
-const CACHE_TTL = 3600000;
-
-// ─── HELPER: Generate response ───
-async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useAccurate = false) {
-    const cacheKey = `${prompt}-${temperature}-${maxTokens}-${useAccurate}`;
-    
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            console.log('📦 Cached response');
-            return cached.data;
-        }
-        cache.delete(cacheKey);
-    }
-    
-    const model = useAccurate ? ACCURATE_MODEL : FAST_MODEL;
-    
+// ─── HELPER: Generate content ───
+async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
         const completion = await client.chat.completions.create({
-            model: model,
-            messages: [
-                { 
-                    role: 'system', 
-                    content: useAccurate 
-                        ? 'You are a knowledgeable assistant. Provide accurate, well-reasoned answers with facts and context.'
-                        : 'You are a helpful assistant. Give accurate, concise answers in 2-3 sentences.'
-                },
-                { role: 'user', content: prompt }
-            ],
+            model: FREE_MODEL,
+            messages: [{ role: 'user', content: prompt }],
             temperature: temperature,
             max_tokens: maxTokens,
         });
-        
-        const result = completion.choices[0].message.content;
-        cache.set(cacheKey, { data: result, timestamp: Date.now() });
-        return result;
+        return completion.choices[0].message.content;
     } catch (error) {
-        console.error('API Error:', error.message);
+        console.error('NVIDIA NIM API Error:', error);
         throw error;
     }
 }
 
 // ─── HELPER: Generate JSON ───
-async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
-    const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
-    
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            console.log('📦 Cached JSON');
-            return cached.data;
-        }
-        cache.delete(cacheKey);
-    }
-    
+async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
         const completion = await client.chat.completions.create({
-            model: ACCURATE_MODEL,
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are a fact-checking AI. Analyze claims carefully. Return valid JSON only. Be accurate.'
-                },
-                { role: 'user', content: prompt }
-            ],
+            model: FREE_MODEL,
+            messages: [{ role: 'user', content: prompt }],
             temperature: temperature,
             max_tokens: maxTokens,
         });
-        
         const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
-        let result;
         if (jsonMatch) {
-            result = JSON.parse(jsonMatch[0]);
-        } else {
-            result = JSON.parse(text);
+            return JSON.parse(jsonMatch[0]);
         }
-        
-        cache.set(cacheKey, { data: result, timestamp: Date.now() });
-        return result;
+        return JSON.parse(text);
     } catch (error) {
-        console.error('JSON Error:', error.message);
+        console.error('NVIDIA NIM JSON Error:', error);
         throw error;
     }
 }
 
-// ─── CLEAN CACHE ───
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of cache.entries()) {
-        if (now - value.timestamp > CACHE_TTL) {
-            cache.delete(key);
-        }
-    }
-}, 60000);
-
-// ════════════════════════════════════════════════
-//  API ROUTES
-// ════════════════════════════════════════════════
-
+// ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     res.json({ 
         status: keyValid ? 'ok' : 'error',
-        message: keyValid ? 'Server running' : 'API key missing',
+        message: keyValid ? 'Server is running with NVIDIA NIM API' : 'API key not configured',
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
         provider: 'NVIDIA NIM',
-        cacheSize: cache.size
+        model: FREE_MODEL
     });
 });
 
+// ─── ASK AI ───
 app.post('/api/ask', async (req, res) => {
     const { question, mode } = req.body;
     
     if (!question) {
-        return res.status(400).json({ error: 'Question required' });
+        return res.status(400).json({ error: 'Question is required' });
     }
 
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid API key' });
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
+    }
+
+    let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
+    if (mode === 'detailed') {
+        systemPrompt = 'You are a helpful assistant. Provide a comprehensive, well-reasoned answer with context, evidence, and sources. If you are unsure, clearly state that you are unsure.';
     }
 
     try {
-        const isDetailed = mode === 'detailed';
-        const prompt = isDetailed 
-            ? `Provide a comprehensive, well-reasoned answer to: "${question}". Include context and evidence.`
-            : `Give a concise, accurate answer to: "${question}". Include the most important fact.`;
-        const answer = await generateResponse(prompt, isDetailed ? 0.3 : 0.3, isDetailed ? 500 : 250, isDetailed);
+        const fullPrompt = `${systemPrompt}\n\nQuestion: ${question}`;
+        const answer = await generateResponse(fullPrompt, 0.7, 500);
         res.json({ answer });
     } catch (error) {
-        console.error('Ask error:', error);
+        console.error('Error in /api/ask:', error);
         res.status(500).json({ error: error.message || 'Failed to get answer' });
     }
 });
 
+// ─── ANALYZE ANSWER ───
 app.post('/api/analyze', async (req, res) => {
     const { question, answer } = req.body;
 
     if (!question || !answer) {
-        return res.status(400).json({ error: 'Question and answer required' });
+        return res.status(400).json({ error: 'Question and answer are required' });
     }
 
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid API key' });
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Analyze this claim: "${answer}" in the context of the question: "${question}".
-    Break it down into individual claims. For each claim, classify as:
-    - "supported" (factually correct)
-    - "context" (partially true, needs context)
-    - "unsupported" (hallucination / false)
+    const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
+    Break it down into individual claims. For each claim, classify it as "supported" (factually correct), "context" (needs more context or is partially true), or "unsupported" (hallucination / false).
     Provide a brief explanation for each classification.
-    Return JSON: { "claims": [ { "text": "...", "status": "...", "explain": "..." } ] }`;
+    Return the result strictly as a JSON object with a "claims" array.
+    Example: { "claims": [ { "text": "The sky is blue.", "status": "supported", "explain": "This is true due to Rayleigh scattering." } ] }
+    Answer: "${answer}"`;
 
     try {
-        const result = await generateJSON(prompt, 0.2, 500);
+        const result = await generateJSON(prompt, 0.3, 800);
         res.json(result);
     } catch (error) {
-        console.error('Analyze error:', error);
+        console.error('Error in /api/analyze:', error);
         res.status(500).json({ error: error.message || 'Failed to analyze answer' });
     }
 });
 
+// ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid API key' });
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Generate a tricky misconception or common myth question.
-    The AI should give a confident but INCORRECT answer.
-    Return JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
+    const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
+    The AI has provided a confident but incorrect answer. Provide the question, the AI's wrong answer, the correct answer, and an explanation.
+    Return strictly as JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
 
     try {
-        const result = await generateJSON(prompt, 0.4, 400);
+        const result = await generateJSON(prompt, 0.8, 600);
         res.json(result);
     } catch (error) {
-        console.error('Challenge error:', error);
+        console.error('Error in /api/challenge:', error);
         res.status(500).json({ error: error.message || 'Failed to generate challenge' });
     }
 });
 
-// ─── CATCH-ALL ROUTE ───
+// ─── SERVE INDEX.HTML ───
 app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    res.sendFile(indexPath, (err) => {
-        if (err) {
-            console.error('Error sending index.html:', err);
-            res.status(500).send('Error loading page');
-        }
-    });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ─── START SERVER ───
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Serving files from: ${publicPath}`);
-    console.log(`✅ Index file exists: ${fs.existsSync(indexPath)}`);
-    console.log(`✅ API Key: ${API_KEY && API_KEY.startsWith('nvapi-') ? '✓ Valid' : '✗ Invalid'}`);
+    console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
+    console.log(`✅ API Provider: NVIDIA NIM`);
+    console.log(`✅ Model: ${FREE_MODEL}`);
+    const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
 });
