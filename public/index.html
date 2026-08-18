@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Confidently Wrong · AI Fact-Check Lab</title>
-    <meta name="description" content="Class 12 science exhibition — fact-check AI claims with sources." />
+    <title>Confidently Wrong · AI Hallucination Lab</title>
+    <meta name="description" content="Class 12 science exhibition — celebrating mistakes through AI hallucination." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -51,11 +51,12 @@
             line-height: 1.6;
         }
         a {
-            color: var(--green);
+            color: inherit;
             text-decoration: none;
         }
-        a:hover {
-            text-decoration: underline;
+        img,
+        svg {
+            display: block;
         }
         .wrap {
             max-width: var(--max-width);
@@ -103,7 +104,8 @@
         .reveal {
             opacity: 0;
             transform: translateY(28px);
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .reveal.in-view {
             opacity: 1;
@@ -111,6 +113,15 @@
         }
         .reveal-stagger {
             transition-delay: 0.08s;
+        }
+        .reveal-stagger:nth-child(2) {
+            transition-delay: 0.16s;
+        }
+        .reveal-stagger:nth-child(3) {
+            transition-delay: 0.24s;
+        }
+        .reveal-stagger:nth-child(4) {
+            transition-delay: 0.32s;
         }
         @media (prefers-reduced-motion: reduce) {
             .reveal,
@@ -239,7 +250,8 @@
         .hero {
             padding: 5rem 0 4.5rem;
             background: radial-gradient(ellipse at 70% 20%, rgba(255, 59, 92, 0.05), transparent 60%),
-                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%), var(--bg);
+                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%),
+                var(--bg);
             position: relative;
             overflow: hidden;
         }
@@ -492,33 +504,6 @@
                 grid-template-columns: 1fr;
             }
         }
-        .mode-selector {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0.5rem;
-        }
-        .mode-selector button {
-            padding: 0.4rem 1.2rem;
-            border: none;
-            border-radius: var(--radius-sm);
-            background: transparent;
-            color: var(--text-secondary);
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            cursor: pointer;
-            transition: all var(--transition);
-        }
-        .mode-selector button.active {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-        .mode-selector button:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.04);
-        }
-
         .lab-input-wrap {
             display: flex;
             gap: 0.7rem;
@@ -751,7 +736,7 @@
             margin-top: 0.3rem;
             padding-left: 2.3rem;
         }
-        .xray-claim .source-link {
+        .xray-claim .source-tag {
             font-family: var(--font-mono);
             font-size: 0.6rem;
             padding: 0.1rem 0.6rem;
@@ -759,34 +744,6 @@
             background: rgba(46, 204, 113, 0.1);
             border: 1px solid rgba(46, 204, 113, 0.2);
             color: var(--green);
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-        .xray-claim .source-link:hover {
-            background: rgba(46, 204, 113, 0.2);
-            transform: scale(1.02);
-        }
-        .fact-check-result {
-            margin-top: 0.8rem;
-            padding: 0.8rem;
-            border-radius: var(--radius-sm);
-            background: rgba(255, 255, 255, 0.02);
-            border-left: 3px solid var(--gold);
-        }
-        .fact-check-result .verdict {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-bottom: 0.3rem;
-        }
-        .fact-check-result .verdict.correct {
-            color: var(--green);
-        }
-        .fact-check-result .verdict.incorrect {
-            color: var(--accent);
-        }
-        .fact-check-result .verdict.partial {
-            color: var(--gold);
         }
 
         .challenge-grid {
@@ -1327,6 +1284,13 @@
             background: rgba(255, 59, 92, 0.08);
             border-left: 3px solid var(--accent);
         }
+        .success-msg {
+            color: var(--green);
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            background: var(--green-glow);
+            border-left: 3px solid var(--green);
+        }
         .api-message {
             text-align: center;
             margin-bottom: 1rem;
@@ -1342,35 +1306,6 @@
             font-size: 0.55rem;
             color: var(--text-muted);
             margin-right: 0.3rem;
-        }
-        .fact-check-claims {
-            margin: 0.8rem 0;
-            padding: 0.6rem;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: var(--radius-sm);
-            border-left: 3px solid var(--gold);
-        }
-        .fact-check-claims .claim-item {
-            padding: 0.4rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .fact-check-claims .claim-item:last-child {
-            border-bottom: none;
-        }
-        .claim-verdict {
-            font-family: var(--font-mono);
-            font-size: 0.6rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-        }
-        .claim-verdict.true {
-            color: var(--green);
-        }
-        .claim-verdict.false {
-            color: var(--accent);
-        }
-        .claim-verdict.partial {
-            color: var(--gold);
         }
     </style>
 </head>
@@ -1399,7 +1334,7 @@
             <div>
                 <span class="eyebrow">Science Exhibition 2026 · Celebrating Mistakes</span>
                 <h1>Confidently <span class="wrong">Wrong.</span></h1>
-                <p class="sub">Fact-check any AI claim, see the correct answer, and get sources with links.</p>
+                <p class="sub">Every AI answer sounds certain. Not every AI answer is true. Enter the lab to see how hallucinations happen — and how to catch them.</p>
                 <a href="#lab" class="cue">
                     Enter the Lab
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
@@ -1430,8 +1365,8 @@
     <section class="section" id="lab">
         <div class="wrap">
             <span class="eyebrow reveal">Interactive Lab</span>
-            <h2 class="reveal">AI Fact-Check Lab</h2>
-            <p class="lede reveal">Paste any claim from an AI, or ask a question — the lab will fact-check it, give the correct answer, and show sources with links.</p>
+            <h2 class="reveal">AI Hallucination Lab</h2>
+            <p class="lede reveal">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated.</p>
 
             <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center;" class="reveal">
                 <span class="score-badge">🏆 Score: <span class="num" id="user-score">0</span></span>
@@ -1441,29 +1376,18 @@
 
             <div class="lab-grid">
                 <div class="reveal">
-                    <div class="mode-selector">
-                        <button class="active" data-mode="ask">❓ Ask AI</button>
-                        <button data-mode="factcheck">🔍 Fact-Check Claim</button>
-                    </div>
                     <div class="lab-input-wrap">
-                        <input type="text" id="custom-question" placeholder="Ask a question or paste a claim…" />
-                        <button id="ask-btn">Ask</button>
+                        <input type="text" id="custom-question" placeholder="Type your question here…" />
+                        <button id="ask-btn">Ask AI</button>
                     </div>
-                    <div id="preset-chips" class="chip-group">
+                    <div class="chip-group">
                         <button class="chip" data-q="Who invented the light bulb?">💡 Light bulb</button>
                         <button class="chip" data-q="How many bones does a shark have?">🦈 Shark bones</button>
                         <button class="chip" data-q="Did Einstein fail math in school?">🧠 Einstein math</button>
                         <button class="chip" data-q="What's the tallest mountain, base to peak?">🏔️ Tallest mountain</button>
                         <button class="chip" data-q="What's the capital of Australia?">🇦🇺 Australia capital</button>
                     </div>
-                    <div id="factcheck-chips" class="chip-group" style="display:none;">
-                        <button class="chip" data-q="Humans only use 10% of their brain.">🧠 10% brain myth</button>
-                        <button class="chip" data-q="Vikings wore horned helmets.">⛑️ Viking helmets</button>
-                        <button class="chip" data-q="Napoleon was extremely short.">📏 Napoleon height</button>
-                        <button class="chip" data-q="The Great Wall of China is visible from space.">🌍 Great Wall myth</button>
-                        <button class="chip" data-q="Bulls get angry when they see red.">🐂 Bullfighting myth</button>
-                    </div>
-                    <button class="btn btn-primary" id="xray-btn" disabled>🔬 X‑Ray / Fact-Check</button>
+                    <button class="btn btn-primary" id="xray-btn" disabled>🔬 X‑Ray This Answer</button>
                     <div style="margin-top:0.8rem;font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">
                         ⚡ Earn points by catching unsupported claims!
                     </div>
@@ -1471,11 +1395,11 @@
 
                 <div class="terminal reveal reveal-stagger">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Ask a question or paste a claim.</span></p>
-                    <p class="aline" id="lab-a">Awaiting your input...</p>
-                    <div id="factcheck-result" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
-                        <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔍 FACT-CHECK RESULT</div>
-                        <div id="factcheck-content"></div>
+                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Choose a question to begin.</span></p>
+                    <p class="aline" id="lab-a">Awaiting your question...</p>
+                    <div class="confidence" id="lab-conf" style="display:none;">
+                        <div class="label"><span>MODEL CONFIDENCE</span><b id="lab-pct">0%</b></div>
+                        <div class="track"><div class="fill" id="lab-fill"></div></div>
                     </div>
                     <div id="lab-xray" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
                         <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔬 CLAIM-BY-CLAIM X‑RAY</div>
@@ -1644,12 +1568,102 @@
     </footer>
 
     <script>
-        // ── SIMPLE FIXED SCRIPT ──
         (function() {
-            console.log('🚀 Website loaded!');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-            // API_BASE - empty means use same domain (works on Render)
-            const API_BASE = '';
+            // ── particles ──
+            const p = document.getElementById('particles');
+            for (let i = 0; i < 28; i++) {
+                const s = document.createElement('span');
+                const size = 2 + Math.random() * 7;
+                s.style.width = size + 'px';
+                s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.animationDuration = 16 + Math.random() * 28 + 's';
+                s.style.animationDelay = Math.random() * 22 + 's';
+                s.style.opacity = 0.06 + Math.random() * 0.14;
+                p.appendChild(s);
+            }
+
+            // ── scroll reveal ──
+            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
+            if ('IntersectionObserver' in window && !reduceMotion) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) { e.target.classList.add('in-view');
+                            io.unobserve(e.target); }
+                    });
+                }, { threshold: 0.12 });
+                revealEls.forEach(el => io.observe(el));
+            } else {
+                revealEls.forEach(el => el.classList.add('in-view'));
+            }
+
+            // ── hero terminal ──
+            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
+            const heroEl = document.getElementById('hero-answer');
+            const heroFlag = document.getElementById('hero-flag');
+            const heroFill = document.getElementById('hero-fill');
+            const heroPct = document.getElementById('hero-pct');
+
+            function typeText(el, text, speed, done) {
+                if (reduceMotion) { el.textContent = text; if (done) done(); return; }
+                let i = 0;
+                el.innerHTML = '';
+                const cursor = document.createElement('span');
+                cursor.className = 'typecursor';
+                cursor.textContent = '\u00A0';
+
+                function step() {
+                    if (i <= text.length) {
+                        el.textContent = text.slice(0, i);
+                        el.appendChild(cursor);
+                        i++;
+                        setTimeout(step, speed);
+                    } else {
+                        cursor.remove();
+                        if (done) done();
+                    }
+                }
+                step();
+            }
+
+            function animateFill(el, pctEl, target, duration) {
+                if (reduceMotion) { el.style.width = target + '%';
+                    pctEl.textContent = target + '%'; return; }
+                el.style.width = target + '%';
+                let start = null;
+
+                function step(ts) {
+                    if (!start) start = ts;
+                    const p = Math.min(1, (ts - start) / duration);
+                    pctEl.textContent = Math.round(p * target) + '%';
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+
+            function runHero() {
+                typeText(heroEl, heroAnswer, 20, () => {
+                    animateFill(heroFill, heroPct, 96, 1100);
+                    setTimeout(() => heroFlag.classList.add('show'), 400);
+                });
+            }
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => { if (e.isIntersecting) { runHero();
+                            io.disconnect(); } });
+                }, { threshold: 0.3 });
+                io.observe(document.getElementById('hero-terminal'));
+            } else { runHero(); }
+
+            // ── API CONFIGURATION ──
+            const API_BASE = window.location.hostname === 'localhost' ?
+                'http://localhost:3001' :
+                '';
+
+            console.log('🚀 API_BASE:', API_BASE || '(same domain)');
+            console.log('🌐 Hostname:', window.location.hostname);
 
             // ── DOM refs ──
             const labQ = document.getElementById('lab-q');
@@ -1660,19 +1674,13 @@
             const labXray = document.getElementById('lab-xray');
             const labClaims = document.getElementById('lab-claims');
             const labCorrection = document.getElementById('lab-correction');
-            const factcheckResult = document.getElementById('factcheck-result');
-            const factcheckContent = document.getElementById('factcheck-content');
             const xrayBtn = document.getElementById('xray-btn');
             const scoreEl = document.getElementById('user-score');
             const caughtEl = document.getElementById('caught-count');
             const customInput = document.getElementById('custom-question');
             const askBtn = document.getElementById('ask-btn');
             const apiStatus = document.getElementById('api-status');
-            const presetChips = document.getElementById('preset-chips');
-            const factcheckChips = document.getElementById('factcheck-chips');
-            const modeBtns = document.querySelectorAll('.mode-selector button');
 
-            let currentMode = 'ask';
             let currentQuestion = '';
             let currentAnswer = '';
             let score = 0,
@@ -1681,42 +1689,10 @@
                 dashC = 0,
                 dashU = 0;
 
-            // ── Mode switching ──
-            modeBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    modeBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentMode = this.dataset.mode;
-                    if (currentMode === 'factcheck') {
-                        presetChips.style.display = 'none';
-                        factcheckChips.style.display = 'flex';
-                        customInput.placeholder = 'Paste a claim to fact-check…';
-                        askBtn.textContent = '🔍 Fact-Check';
-                        xrayBtn.textContent = '🔍 Fact-Check This';
-                        labQ.textContent = 'Paste a claim to fact-check.';
-                        labA.textContent = 'Awaiting your claim...';
-                        labXray.style.display = 'none';
-                        factcheckResult.style.display = 'none';
-                        xrayBtn.disabled = true;
-                    } else {
-                        presetChips.style.display = 'flex';
-                        factcheckChips.style.display = 'none';
-                        customInput.placeholder = 'Ask a question or paste a claim…';
-                        askBtn.textContent = 'Ask';
-                        xrayBtn.textContent = '🔬 X‑Ray This Answer';
-                        labQ.textContent = 'Ask a question or paste a claim.';
-                        labA.textContent = 'Awaiting your input...';
-                        labXray.style.display = 'none';
-                        factcheckResult.style.display = 'none';
-                        xrayBtn.disabled = true;
-                    }
-                });
-            });
-
             // ── API helper ──
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
-                console.log(`📡 Calling: ${url}`);
+                console.log(`📡 Calling API: ${url}`);
 
                 try {
                     const res = await fetch(url, {
@@ -1726,17 +1702,30 @@
                     });
 
                     if (!res.ok) {
-                        let errorMsg = `HTTP ${res.status}`;
-                        try {
-                            const errData = await res.json();
-                            errorMsg = errData.error || errorMsg;
-                        } catch (e) {}
-                        throw new Error(errorMsg);
+                        const errorData = await res.json();
+                        throw new Error(errorData.error || `HTTP ${res.status}`);
                     }
 
                     return await res.json();
                 } catch (err) {
-                    console.error(`❌ API Error:`, err);
+                    console.error(`❌ API Error (${endpoint}):`, err);
+                    throw err;
+                }
+            }
+
+            async function callApiGet(endpoint) {
+                const url = `${API_BASE}${endpoint}`;
+                console.log(`📡 Calling API (GET): ${url}`);
+
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        const errorData = await res.json();
+                        throw new Error(errorData.error || `HTTP ${res.status}`);
+                    }
+                    return await res.json();
+                } catch (err) {
+                    console.error(`❌ API Error (${endpoint}):`, err);
                     throw err;
                 }
             }
@@ -1744,167 +1733,76 @@
             // ── Health check ──
             async function checkHealth() {
                 try {
-                    const url = `${API_BASE}/api/health`;
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'ok') {
-                            apiStatus.textContent = '🟢 Online';
-                            apiStatus.className = 'status-badge online';
-                            return true;
-                        }
+                    const data = await callApiGet('/api/health');
+                    if (data && data.status === 'ok') {
+                        apiStatus.textContent = '🟢 Online';
+                        apiStatus.className = 'status-badge online';
+                        return true;
+                    } else {
+                        apiStatus.textContent = '⚠️ Error';
+                        apiStatus.className = 'status-badge offline';
+                        return false;
                     }
-                    apiStatus.textContent = '🔴 Offline';
-                    apiStatus.className = 'status-badge offline';
-                    return false;
-                } catch (e) {
+                } catch (error) {
                     apiStatus.textContent = '🔴 Offline';
                     apiStatus.className = 'status-badge offline';
                     return false;
                 }
             }
 
-            // ── Generate sources ──
-            function generateSources(claimText) {
-                const sources = {
-                    'Edison invented': [
-                        { title: 'US Patent 223,898 (1880)', url: 'https://patents.google.com/patent/US223898A/en' },
-                        { title: 'Edison Papers Project', url: 'https://edison.rutgers.edu/' }
-                    ],
-                    '1879': [
-                        { title: 'US Patent 223,898 (1880)', url: 'https://patents.google.com/patent/US223898A/en' }
-                    ],
-                    'shark': [
-                        { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' }
-                    ],
-                    'Einstein': [
-                        { title: 'Albert Einstein Archives', url: 'https://www.albert-einstein.org/' }
-                    ],
-                    'Mount Everest': [
-                        { title: 'USGS - Mount Everest', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' }
-                    ],
-                    'Australia': [
-                        { title: 'Australian Government - Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' }
-                    ],
-                    '10% of their brain': [
-                        { title: 'Scientific American - The 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' }
-                    ],
-                    'horned helmets': [
-                        { title: 'History.com - Viking Helmets', url: 'https://www.history.com/news/did-vikings-really-wear-horned-helmets' }
-                    ],
-                    'Napoleon': [
-                        { title: 'History.com - Was Napoleon Short?', url: 'https://www.history.com/news/was-napoleon-short' }
-                    ],
-                    'Great Wall': [
-                        { title: 'NASA - Great Wall from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' }
-                    ],
-                    'bulls': [
-                        { title: 'Live Science - Bulls and Red', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' }
-                    ]
-                };
-
-                for (const [key, srcs] of Object.entries(sources)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase())) {
-                        return srcs;
-                    }
-                }
-                return [{ title: 'Encyclopedia Britannica', url: 'https://www.britannica.com/' }];
-            }
-
-            // ── Ask AI ──
-            async function askAI(input) {
-                if (!input) return;
-                currentQuestion = input;
-                labQ.textContent = input;
+            // ── Lab: Ask AI ──
+            async function askAI(question) {
+                if (!question) return;
+                currentQuestion = question;
+                labQ.textContent = question;
                 labA.textContent = '⏳ Thinking...';
                 labConf.style.display = 'none';
                 labXray.style.display = 'none';
-                factcheckResult.style.display = 'none';
                 xrayBtn.disabled = true;
 
                 try {
-                    if (currentMode === 'factcheck') {
-                        const data = await callApi('/api/analyze', { question: input, answer: input });
-                        currentAnswer = input;
-                        labA.textContent = input;
-
-                        factcheckResult.style.display = 'block';
-                        const claims = data.claims || [];
-                        let html = '';
-                        let unsupportedCount = 0;
-
-                        let overall = 'partial';
-                        claims.forEach(c => { if (c.status === 'unsupported') unsupportedCount++; });
-                        if (unsupportedCount === 0 && claims.length > 0) overall = 'correct';
-                        else if (unsupportedCount === claims.length) overall = 'incorrect';
-
-                        html += `<div class="fact-check-result">`;
-                        html += `<div class="verdict ${overall}">`;
-                        if (overall === 'correct') html += '✅ VERDICT: CORRECT';
-                        else if (overall === 'incorrect') html += '❌ VERDICT: INCORRECT';
-                        else html += '⚠️ VERDICT: PARTIALLY CORRECT';
-                        html += `</div>`;
-
-                        html += `<div class="fact-check-claims">`;
-                        claims.forEach(c => {
-                            const verdict = c.status === 'supported' ? 'true' : (c.status === 'unsupported' ?
-                                'false' : 'partial');
-                            const label = c.status === 'supported' ? '✅ Supported' : (c.status === 'unsupported' ?
-                                '❌ Unsupported' : '⚠️ Needs Context');
-                            html += `<div class="claim-item">`;
-                            html += `<span>"${c.text}"</span>`;
-                            html += `<span class="claim-verdict ${verdict}">${label}</span>`;
-                            html += `<div style="font-size:0.75rem;color:var(--text-muted);">${c.explain}</div>`;
-                            if (c.status === 'supported') {
-                                const srcs = generateSources(c.text);
-                                html += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.2rem;">`;
-                                html += `<span class="sources-label">📚 Sources:</span>`;
-                                srcs.forEach(s => {
-                                    html +=
-                                        `<a href="${s.url}" target="_blank" class="source-link">🔗 ${s.title}</a>`;
-                                });
-                                html += `</div>`;
-                            }
-                            html += `</div>`;
-                        });
-                        html += `</div></div>`;
-                        factcheckContent.innerHTML = html;
-
-                        if (unsupportedCount > 0) {
-                            const total = claims.length;
-                            const correct = total - unsupportedCount;
-                            const earned = Math.round((correct / total) * 100);
-                            score += earned;
-                            caught += unsupportedCount;
-                            scoreEl.textContent = score;
-                            caughtEl.textContent = caught;
-                            dashQ++;
-                            dashC += total;
-                            dashU += unsupportedCount;
-                            updateDashboard();
-                        }
-                        xrayBtn.disabled = true;
-                    } else {
-                        const data = await callApi('/api/ask', { question: input, mode: 'simple' });
-                        currentAnswer = data.answer;
-                        labA.textContent = data.answer;
-                        labConf.style.display = 'block';
-                        const conf = Math.floor(Math.random() * 20) + 70;
-                        animateFill(labFill, labPct, conf, 900);
-                        xrayBtn.disabled = false;
-                        factcheckResult.style.display = 'none';
-                    }
+                    const data = await callApi('/api/ask', { question, mode: 'simple' });
+                    currentAnswer = data.answer;
+                    labA.textContent = data.answer;
+                    labConf.style.display = 'block';
+                    const conf = Math.floor(Math.random() * 20) + 70;
+                    animateFill(labFill, labPct, conf, 900);
+                    xrayBtn.disabled = false;
                 } catch (err) {
-                    labA.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
+                    labA.innerHTML = `
+                        <span class="error-msg">⚠️ Error: ${err.message}</span>
+                    `;
                 }
             }
 
-            // ── X-Ray ──
+            // ── Sample sources for claims (simulated) ──
+            function getSourcesForClaim(claimText) {
+                // In a real implementation, these would come from the API
+                const sources = {
+                    'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
+                    'in 1879': ['US Patent 223,898 (1880)'],
+                    'Sharks have 206 bones': ['NOAA Fisheries'],
+                    'Einstein failed mathematics': ['Albert Einstein Archives'],
+                    'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
+                    'The capital of Australia is Sydney': ['Australian Government Geoscience']
+                };
+                
+                for (const [key, value] of Object.entries(sources)) {
+                    if (claimText.toLowerCase().includes(key.toLowerCase()) || 
+                        key.toLowerCase().includes(claimText.toLowerCase())) {
+                        return value;
+                    }
+                }
+                // Default sources if none match
+                return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
+            }
+
+            // ── Lab: X-Ray ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
                 labXray.style.display = 'block';
                 labClaims.innerHTML =
-                    '<div class="xray-claim"><span class="badge context">⏳ Analyzing...</span></div>';
+                    '<div class="xray-claim"><span class="badge context">⏳</span><div class="text">Analyzing claims...</div></div>';
 
                 try {
                     const data = await callApi('/api/analyze', { question: currentQuestion, answer: currentAnswer });
@@ -1915,40 +1813,42 @@
                     claims.forEach(c => {
                         const d = document.createElement('div');
                         d.className = 'xray-claim';
+                        
                         const header = document.createElement('div');
                         header.className = 'claim-header';
+                        
                         const b = document.createElement('span');
                         b.className = 'badge ' + c.status;
-                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
-                            unsupported: '❌ UNSUPPORTED' };
+                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT', unsupported: '❌ UNSUPPORTED' };
                         b.textContent = labels[c.status] || c.status;
+                        
                         const t = document.createElement('div');
                         t.className = 'text';
                         t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
+                        
                         header.appendChild(b);
                         header.appendChild(t);
                         d.appendChild(header);
-
+                        
+                        // Add sources for supported claims
                         if (c.status === 'supported') {
-                            const srcs = generateSources(c.text);
-                            if (srcs.length > 0) {
-                                const sd = document.createElement('div');
-                                sd.className = 'sources';
-                                const lbl = document.createElement('span');
-                                lbl.className = 'sources-label';
-                                lbl.textContent = '📚 Sources:';
-                                sd.appendChild(lbl);
-                                srcs.forEach(s => {
-                                    const a = document.createElement('a');
-                                    a.href = s.url;
-                                    a.target = '_blank';
-                                    a.className = 'source-link';
-                                    a.innerHTML = `🔗 ${s.title}`;
-                                    sd.appendChild(a);
-                                });
-                                d.appendChild(sd);
-                            }
+                            const sourcesDiv = document.createElement('div');
+                            sourcesDiv.className = 'sources';
+                            const label = document.createElement('span');
+                            label.className = 'sources-label';
+                            label.textContent = '📚 Sources:';
+                            sourcesDiv.appendChild(label);
+                            
+                            const sourceList = getSourcesForClaim(c.text);
+                            sourceList.forEach(src => {
+                                const tag = document.createElement('span');
+                                tag.className = 'source-tag';
+                                tag.textContent = src;
+                                sourcesDiv.appendChild(tag);
+                            });
+                            d.appendChild(sourcesDiv);
                         }
+                        
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -1975,46 +1875,16 @@
                 this.disabled = true;
             });
 
-            // ── Preset chips ──
-            document.querySelectorAll('#preset-chips .chip').forEach(btn => {
+            // ── Lab: Preset chips ──
+            document.querySelectorAll('.chip').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
                     this.classList.add('active');
-                    currentMode = 'ask';
-                    modeBtns.forEach(b => b.classList.remove('active'));
-                    document.querySelector('.mode-selector button[data-mode="ask"]').classList.add('active');
-                    presetChips.style.display = 'flex';
-                    factcheckChips.style.display = 'none';
-                    customInput.placeholder = 'Ask a question or paste a claim…';
-                    askBtn.textContent = 'Ask';
-                    xrayBtn.textContent = '🔬 X‑Ray This Answer';
-                    xrayBtn.disabled = true;
-                    labXray.style.display = 'none';
-                    factcheckResult.style.display = 'none';
                     askAI(this.dataset.q);
                 });
             });
 
-            document.querySelectorAll('#factcheck-chips .chip').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-                    this.classList.add('active');
-                    currentMode = 'factcheck';
-                    modeBtns.forEach(b => b.classList.remove('active'));
-                    document.querySelector('.mode-selector button[data-mode="factcheck"]').classList.add(
-                        'active');
-                    presetChips.style.display = 'none';
-                    factcheckChips.style.display = 'flex';
-                    customInput.placeholder = 'Paste a claim to fact-check…';
-                    askBtn.textContent = '🔍 Fact-Check';
-                    xrayBtn.textContent = '🔍 Fact-Check This';
-                    xrayBtn.disabled = true;
-                    labXray.style.display = 'none';
-                    askAI(this.dataset.q);
-                });
-            });
-
-            // ── Custom input ──
+            // ── Lab: Custom question ──
             askBtn.addEventListener('click', () => {
                 const q = customInput.value.trim();
                 if (q) { askAI(q);
@@ -2040,21 +1910,27 @@
                 apiMessage.className = 'api-message show';
                 apiMessage.style.background = type === 'error' ? 'rgba(255,59,92,0.1)' : 'rgba(46,204,113,0.1)';
                 apiMessage.style.color = type === 'error' ? '#ff3b5c' : '#2ecc71';
+                apiMessage.style.borderLeft = type === 'error' ? '3px solid #ff3b5c' : '3px solid #2ecc71';
             }
 
             async function generateChallenge() {
                 challengeGrid.innerHTML =
-                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating...</div></div>';
+                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating a new challenge...</div></div>';
                 apiMessage.className = 'api-message';
 
                 try {
                     const data = await callApi('/api/challenge', {});
                     renderChallenge(data);
-                    showMessage('✅ Challenge generated!', 'success');
+                    showMessage('✅ Challenge generated successfully!', 'success');
                 } catch (err) {
-                    challengeGrid.innerHTML =
-                        `<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--accent);">❌ ${err.message}</div></div>`;
-                    showMessage(`❌ ${err.message}`, 'error');
+                    challengeGrid.innerHTML = `
+                        <div class="challenge-card">
+                            <div style="text-align:center;padding:1rem;color:var(--accent);">
+                                ❌ Failed to generate challenge: ${err.message}
+                            </div>
+                        </div>
+                    `;
+                    showMessage(`❌ Error: ${err.message}`, 'error');
                 }
             }
 
@@ -2062,7 +1938,8 @@
                 const card = document.createElement('div');
                 card.className = 'challenge-card';
                 const isCorrectTrue = data.correct_answer.toLowerCase().includes('true') ||
-                    data.correct_answer.toLowerCase().includes('yes');
+                    data.correct_answer.toLowerCase().includes('yes') ||
+                    data.correct_answer.toLowerCase().includes('correct');
 
                 card.innerHTML = `
                     <span class="status pending">❓ CHALLENGE</span>
@@ -2104,7 +1981,7 @@
                         status.className = 'status ' + (isCorrect ? 'correct' : 'wrong');
                         result.style.display = 'block';
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
-                        result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
+                        result.textContent = isCorrect ? '✓ You got it right!' : '✗ Not quite.';
                         revealDiv.style.display = 'block';
 
                         if (isCorrect) {
@@ -2127,13 +2004,13 @@
             const contextSlider = document.getElementById('context-slider');
             const contextLabel = document.getElementById('context-label');
             const runExpBtn = document.getElementById('run-experiment');
-            const modeBtnsExp = document.querySelectorAll('.toggle-group button');
+            const modeBtns = document.querySelectorAll('.toggle-group button');
             let expMode = 'simple';
 
             contextSlider.addEventListener('input', () => { contextLabel.textContent = contextSlider.value + '%'; });
-            modeBtnsExp.forEach(btn => {
+            modeBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    modeBtnsExp.forEach(b => b.classList.remove('active'));
+                    modeBtns.forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     expMode = this.dataset.mode;
                 });
@@ -2144,8 +2021,8 @@
                 const simpleEl = document.getElementById('simple-answer');
                 const detailedEl = document.getElementById('detailed-answer');
 
-                simpleEl.innerHTML = '<span class="loading-spinner"></span> Loading...';
-                detailedEl.innerHTML = '<span class="loading-spinner"></span> Loading...';
+                simpleEl.innerHTML = '<span class="loading-spinner"></span> Fetching simple answer...';
+                detailedEl.innerHTML = '<span class="loading-spinner"></span> Fetching detailed answer...';
 
                 try {
                     const [simpleRes, detailedRes] = await Promise.all([
@@ -2156,24 +2033,25 @@
                     simpleEl.textContent = simpleRes.answer;
                     detailedEl.textContent = detailedRes.answer;
 
+                    // Analyze both
                     const [simpleAnalysis, detailedAnalysis] = await Promise.all([
                         callApi('/api/analyze', { question, answer: simpleRes.answer }),
                         callApi('/api/analyze', { question, answer: detailedRes.answer })
                     ]);
 
                     const countStatus = (claims, status) => claims.filter(c => c.status === status).length;
-                    const sClaims = simpleAnalysis.claims || [];
-                    const dClaims = detailedAnalysis.claims || [];
+                    const simpleClaims = simpleAnalysis.claims || [];
+                    const detailedClaims = detailedAnalysis.claims || [];
 
-                    const sSup = countStatus(sClaims, 'supported');
-                    const sCtx = countStatus(sClaims, 'context');
-                    const sUnsup = countStatus(sClaims, 'unsupported');
-                    const sTotal = sClaims.length || 1;
+                    const sSup = countStatus(simpleClaims, 'supported');
+                    const sCtx = countStatus(simpleClaims, 'context');
+                    const sUnsup = countStatus(simpleClaims, 'unsupported');
+                    const sTotal = simpleClaims.length || 1;
 
-                    const dSup = countStatus(dClaims, 'supported');
-                    const dCtx = countStatus(dClaims, 'context');
-                    const dUnsup = countStatus(dClaims, 'unsupported');
-                    const dTotal = dClaims.length || 1;
+                    const dSup = countStatus(detailedClaims, 'supported');
+                    const dCtx = countStatus(detailedClaims, 'context');
+                    const dUnsup = countStatus(detailedClaims, 'unsupported');
+                    const dTotal = detailedClaims.length || 1;
 
                     const avgSup = Math.round(((sSup / sTotal) + (dSup / dTotal)) / 2 * 100);
                     const avgCtx = Math.round(((sCtx / sTotal) + (dCtx / dTotal)) / 2 * 100);
@@ -2189,93 +2067,45 @@
                     updateDashboard();
 
                 } catch (err) {
-                    simpleEl.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
-                    detailedEl.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
+                    simpleEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
+                    detailedEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
                 }
             });
 
             function animateExpBar(barId, valId, target) {
                 const bar = document.getElementById(barId);
                 const val = document.getElementById(valId);
+                if (reduceMotion) { bar.style.width = target + '%';
+                    val.textContent = target + '%'; return; }
                 bar.style.width = target + '%';
-                val.textContent = target + '%';
-            }
+                let start = null;
 
-            // ── Hero typewriter ──
-            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
-            const heroEl = document.getElementById('hero-answer');
-            const heroFlag = document.getElementById('hero-flag');
-            const heroFill = document.getElementById('hero-fill');
-            const heroPct = document.getElementById('hero-pct');
-
-            function typeText(el, text, speed, done) {
-                let i = 0;
-                el.innerHTML = '';
-                const cursor = document.createElement('span');
-                cursor.className = 'typecursor';
-                cursor.textContent = '\u00A0';
-
-                function step() {
-                    if (i <= text.length) {
-                        el.textContent = text.slice(0, i);
-                        el.appendChild(cursor);
-                        i++;
-                        setTimeout(step, speed);
-                    } else {
-                        cursor.remove();
-                        if (done) done();
-                    }
+                function step(ts) {
+                    if (!start) start = ts;
+                    const p = Math.min(1, (ts - start) / 800);
+                    const current = Math.round(p * target);
+                    val.textContent = current + '%';
+                    if (p < 1) requestAnimationFrame(step);
                 }
-                step();
-            }
-
-            function animateFill(el, pctEl, target) {
-                el.style.width = target + '%';
-                pctEl.textContent = target + '%';
-            }
-
-            function runHero() {
-                typeText(heroEl, heroAnswer, 25, () => {
-                    animateFill(heroFill, heroPct, 96);
-                    setTimeout(() => heroFlag.classList.add('show'), 400);
-                });
-            }
-            runHero();
-
-            // ── Particles ──
-            const particles = document.getElementById('particles');
-            for (let i = 0; i < 20; i++) {
-                const s = document.createElement('span');
-                const size = 2 + Math.random() * 6;
-                s.style.width = size + 'px';
-                s.style.height = size + 'px';
-                s.style.left = Math.random() * 100 + '%';
-                s.style.animationDuration = 15 + Math.random() * 25 + 's';
-                s.style.animationDelay = Math.random() * 20 + 's';
-                particles.appendChild(s);
+                requestAnimationFrame(step);
             }
 
             // ── Init ──
+            // Check API status
             checkHealth();
-            setTimeout(generateChallenge, 500);
-            setTimeout(() => runExpBtn.click(), 800);
-            askAI('Who invented the light bulb?');
-            document.querySelector('#preset-chips .chip[data-q="Who invented the light bulb?"]').classList.add('active');
-            setInterval(checkHealth, 30000);
 
-            // ── Scroll reveal ──
-            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
-            if ('IntersectionObserver' in window) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => {
-                        if (e.isIntersecting) { e.target.classList.add('in-view');
-                            io.unobserve(e.target); }
-                    });
-                }, { threshold: 0.1 });
-                revealEls.forEach(el => io.observe(el));
-            } else {
-                revealEls.forEach(el => el.classList.add('in-view'));
-            }
+            // Auto-generate a challenge on load
+            setTimeout(generateChallenge, 500);
+
+            // Auto-run experiment
+            setTimeout(() => runExpBtn.click(), 800);
+
+            // Load first question
+            askAI('Who invented the light bulb?');
+            document.querySelector('.chip[data-q="Who invented the light bulb?"]').classList.add('active');
+
+            // Periodic health check
+            setInterval(checkHealth, 15000);
 
         })();
     </script>
