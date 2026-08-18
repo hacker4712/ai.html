@@ -368,20 +368,9 @@ app.post('/api/challenge', async (req, res) => {
     }
 });
 
-// ─── SERVE INDEX.HTML FOR ALL ROUTES ───
+// ─── SERVE INDEX.HTML ───
 app.get('*', (req, res) => {
-    // Check if the request is for an API route
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    
-    // Serve index.html for all other routes
-    try {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    } catch (error) {
-        console.error('Error serving index.html:', error);
-        res.status(500).send('Error loading page. Please check server logs.');
-    }
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ─── START SERVER ───
