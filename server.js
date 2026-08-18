@@ -28,16 +28,24 @@ const client = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: API_KEY,
     defaultHeaders: {
-        'HTTP-Referer': 'https://your-app-name.onrender.com', // Replace with your URL
+        'HTTP-Referer': 'https://your-app-name.onrender.com',
         'X-Title': 'AI Hallucination Exhibition'
     }
 });
 
-// ─── HELPER: Generate content with OpenRouter ───
+// ─── FREE MODELS THAT WORK ───
+// Choose one of these:
+// 1. 'google/gemma-3-27b-it:free'      - Best quality (Gemma 3 27B)
+// 2. 'mistralai/mistral-small-3.1-24b-instruct:free' - Good quality
+// 3. 'qwen/qwen-2.5-72b-instruct:free' - Very capable
+// 4. 'deepseek/deepseek-chat:free'     - Good for reasoning
+const FREE_MODEL = 'google/gemma-3-27b-it:free'; // ← Best free model
+
+// ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
         const completion = await client.chat.completions.create({
-            model: 'meta-llama/llama-3.3-70b-instruct:free', // Free model
+            model: FREE_MODEL,
             messages: [{ role: 'user', content: prompt }],
             temperature: temperature,
             max_tokens: maxTokens,
@@ -49,11 +57,11 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     }
 }
 
-// ─── HELPER: Generate JSON from OpenRouter ───
+// ─── HELPER: Generate JSON ───
 async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
         const completion = await client.chat.completions.create({
-            model: 'meta-llama/llama-3.3-70b-instruct:free',
+            model: FREE_MODEL,
             messages: [{ role: 'user', content: prompt }],
             temperature: temperature,
             max_tokens: maxTokens,
@@ -79,7 +87,7 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
         provider: 'OpenRouter',
-        model: 'Llama 3.3 70B (free)'
+        model: FREE_MODEL
     });
 });
 
@@ -167,10 +175,7 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
     console.log(`✅ API Provider: OpenRouter`);
-    console.log(`✅ Model: Llama 3.3 70B (free)`);
+    console.log(`✅ Model: ${FREE_MODEL} (FREE)`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
-    console.log(`✅ API Key: ${keyValid ? '✓ Valid (sk-or-v1-...)' : '✗ Invalid - Must start with sk-or-v1-...'}`);
-    if (!keyValid) {
-        console.log(`   ⚠️  Get a valid key from: https://openrouter.ai/keys`);
-    }
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
 });
