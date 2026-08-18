@@ -66,102 +66,15 @@ const client = new OpenAI({
 const FAST_MODEL = 'mistralai/mistral-small-3.1-24b-instruct';
 const ACCURATE_MODEL = 'meta/llama-3.1-70b-instruct';
 
-// ─── RATE LIMIT SETTINGS ───
-const RATE_LIMIT = {
-    requestsPerMinute: 5,
-    requestCount: 0,
-    resetTime: Date.now() + 60000,
-    queue: [],
-    processing: false
-};
-
 // ─── CACHE ───
 const cache = new Map();
 const CACHE_TTL = 3600000; // 1 hour
-
-// ─── FALLBACK RESPONSES ───
-const FALLBACKS = {
-    challenge: {
-        question: "What's the capital of Australia?",
-        ai_answer: "The capital of Australia is Sydney.",
-        correct_answer: "Canberra",
-        explanation: "Canberra was chosen as the capital in 1908 as a compromise between Sydney and Melbourne."
-    },
-    ask: "I'm currently rate limited. Please try again in a moment. For now, here's a fun fact: The capital of Australia is Canberra.",
-    analyze: {
-        claims: [
-            { 
-                text: "Analysis temporarily unavailable due to rate limits.", 
-                status: "context", 
-                explain: "Please try again in a moment." 
-            }
-        ]
-    }
-};
-
-// ─── RETRY HELPER ───
-async function withRetry(fn, maxRetries = 3, delay = 1000) {
-    let lastError;
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            return await fn();
-        } catch (error) {
-            lastError = error;
-            console.log(`⚠️ Attempt ${i + 1} failed: ${error.message}`);
-            if (i < maxRetries - 1 && !error.message.includes('429')) {
-                const waitTime = delay * Math.pow(2, i);
-                console.log(`⏳ Waiting ${waitTime}ms before retry...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-            }
-        }
-    }
-    throw lastError;
-}
-
-// ─── RATE LIMIT QUEUE ───
-async function processQueue() {
-    if (RATE_LIMIT.processing || RATE_LIMIT.queue.length === 0) return;
-    
-    if (Date.now() > RATE_LIMIT.resetTime) {
-        RATE_LIMIT.requestCount = 0;
-        RATE_LIMIT.resetTime = Date.now() + 60000;
-    }
-    
-    if (RATE_LIMIT.requestCount >= RATE_LIMIT.requestsPerMinute) {
-        const waitTime = RATE_LIMIT.resetTime - Date.now();
-        console.log(`⏳ Rate limit reached. Waiting ${Math.round(waitTime/1000)}s...`);
-        setTimeout(processQueue, waitTime + 100);
-        return;
-    }
-    
-    RATE_LIMIT.processing = true;
-    const { fn, resolve, reject } = RATE_LIMIT.queue.shift();
-    
-    try {
-        RATE_LIMIT.requestCount++;
-        const result = await fn();
-        resolve(result);
-    } catch (error) {
-        reject(error);
-    } finally {
-        RATE_LIMIT.processing = false;
-        setTimeout(processQueue, 500);
-    }
-}
-
-function enqueueRequest(fn) {
-    return new Promise((resolve, reject) => {
-        RATE_LIMIT.queue.push({ fn, resolve, reject });
-        if (!RATE_LIMIT.processing) {
-            processQueue();
-        }
-    });
-}
 
 // ─── HELPER: Generate response ───
 async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useAccurate = false) {
     const cacheKey = `${prompt}-${temperature}-${maxTokens}-${useAccurate}`;
     
+    // Check cache
     if (cache.has(cacheKey)) {
         const cached = cache.get(cacheKey);
         if (Date.now() - cached.timestamp < CACHE_TTL) {
@@ -174,7 +87,7 @@ async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useA
     
     const model = useAccurate ? ACCURATE_MODEL : FAST_MODEL;
     
-    const makeRequest = async () => {
+    try {
         const startTime = Date.now();
         const completion = await client.chat.completions.create({
             model: model,
@@ -192,14 +105,10 @@ async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useA
         });
         const elapsed = Date.now() - startTime;
         console.log(`⏱️ Response generated in ${elapsed}ms`);
-        return completion.choices[0].message.content;
-    };
-    
-    try {
-        const result = await withRetry(async () => {
-            return await enqueueRequest(makeRequest);
-        });
         
+        const result = completion.choices[0].message.content;
+        
+        // Cache the result
         cache.set(cacheKey, {
             data: result,
             timestamp: Date.now()
@@ -207,8 +116,8 @@ async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useA
         
         return result;
     } catch (error) {
-        console.error('Error after retries:', error);
-        return FALLBACKS.ask;
+        console.error('NVIDIA NIM API Error:', error);
+        throw error;
     }
 }
 
@@ -216,6 +125,7 @@ async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useA
 async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
     const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
     
+    // Check cache
     if (cache.has(cacheKey)) {
         const cached = cache.get(cacheKey);
         if (Date.now() - cached.timestamp < CACHE_TTL) {
@@ -226,7 +136,7 @@ async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
         }
     }
     
-    const makeRequest = async () => {
+    try {
         const startTime = Date.now();
         const completion = await client.chat.completions.create({
             model: ACCURATE_MODEL,
@@ -242,19 +152,17 @@ async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
         });
         const elapsed = Date.now() - startTime;
         console.log(`⏱️ JSON generated in ${elapsed}ms`);
+        
         const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
+        let result;
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            result = JSON.parse(jsonMatch[0]);
+        } else {
+            result = JSON.parse(text);
         }
-        return JSON.parse(text);
-    };
-    
-    try {
-        const result = await withRetry(async () => {
-            return await enqueueRequest(makeRequest);
-        });
         
+        // Cache the result
         cache.set(cacheKey, {
             data: result,
             timestamp: Date.now()
@@ -262,13 +170,7 @@ async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
         
         return result;
     } catch (error) {
-        console.error('Error after retries:', error);
-        if (prompt.includes('misconception') || prompt.includes('myth')) {
-            return FALLBACKS.challenge;
-        }
-        if (prompt.includes('Analyze')) {
-            return FALLBACKS.analyze;
-        }
+        console.error('NVIDIA NIM JSON Error:', error);
         throw error;
     }
 }
@@ -294,13 +196,7 @@ app.get('/api/health', (req, res) => {
         provider: 'NVIDIA NIM',
         fastModel: FAST_MODEL,
         accurateModel: ACCURATE_MODEL,
-        queueLength: RATE_LIMIT.queue.length,
-        cacheSize: cache.size,
-        rateLimit: {
-            requestsThisMinute: RATE_LIMIT.requestCount,
-            maxPerMinute: RATE_LIMIT.requestsPerMinute,
-            resetIn: Math.max(0, Math.round((RATE_LIMIT.resetTime - Date.now()) / 1000)) + 's'
-        }
+        cacheSize: cache.size
     });
 });
 
@@ -330,12 +226,7 @@ app.post('/api/ask', async (req, res) => {
         res.json({ answer });
     } catch (error) {
         console.error('Error in /api/ask:', error);
-        const retryAfter = Math.max(0, Math.round((RATE_LIMIT.resetTime - Date.now()) / 1000));
-        res.status(429).json({ 
-            error: error.message || 'Rate limit exceeded. Please try again.',
-            retryAfter: retryAfter,
-            fallback: FALLBACKS.ask
-        });
+        res.status(500).json({ error: error.message || 'Failed to get answer' });
     }
 });
 
@@ -364,12 +255,7 @@ app.post('/api/analyze', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error in /api/analyze:', error);
-        const retryAfter = Math.max(0, Math.round((RATE_LIMIT.resetTime - Date.now()) / 1000));
-        res.status(429).json({ 
-            error: error.message || 'Rate limit exceeded. Please try again.',
-            retryAfter: retryAfter,
-            fallback: FALLBACKS.analyze
-        });
+        res.status(500).json({ error: error.message || 'Failed to analyze answer' });
     }
 });
 
@@ -388,12 +274,7 @@ app.post('/api/challenge', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        const retryAfter = Math.max(0, Math.round((RATE_LIMIT.resetTime - Date.now()) / 1000));
-        res.status(429).json({ 
-            error: error.message || 'Rate limit exceeded. Please try again.',
-            retryAfter: retryAfter,
-            ...FALLBACKS.challenge
-        });
+        res.status(500).json({ error: error.message || 'Failed to generate challenge' });
     }
 });
 
@@ -411,7 +292,5 @@ app.listen(PORT, () => {
     console.log(`✅ Accurate Model: ${ACCURATE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
-    console.log(`🛡️ Rate Limit: ${RATE_LIMIT.requestsPerMinute} requests/minute`);
     console.log(`📦 Cache: Enabled (${CACHE_TTL/1000}s TTL)`);
-    console.log(`🔄 Fallbacks: Enabled for rate limits`);
 });
