@@ -33,9 +33,8 @@ const client = new OpenAI({
     }
 });
 
-// ─── CONFIRMED WORKING FREE MODEL ───
-// Qwen 2.5 72B is currently available on OpenRouter's free tier
-const FREE_MODEL = 'qwen/qwen-2.5-72b-instruct:free';
+// ─── TRY THIS MODEL FIRST ───
+const FREE_MODEL = 'deepseek/deepseek-r1:free';
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
