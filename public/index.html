@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Confidently Wrong · AI Hallucination Lab</title>
+    <title>Confidently Wrong · AI Fact-Check Lab</title>
     <meta name="description" content="Class 12 science exhibition — fact-check AI claims with sources." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -111,15 +111,6 @@
         }
         .reveal-stagger {
             transition-delay: 0.08s;
-        }
-        .reveal-stagger:nth-child(2) {
-            transition-delay: 0.16s;
-        }
-        .reveal-stagger:nth-child(3) {
-            transition-delay: 0.24s;
-        }
-        .reveal-stagger:nth-child(4) {
-            transition-delay: 0.32s;
         }
         @media (prefers-reduced-motion: reduce) {
             .reveal,
@@ -743,18 +734,6 @@
             background: rgba(255, 59, 92, 0.15);
             color: var(--accent);
         }
-        .badge.correct {
-            background: var(--green-glow);
-            color: var(--green);
-        }
-        .badge.incorrect {
-            background: rgba(255, 59, 92, 0.15);
-            color: var(--accent);
-        }
-        .badge.partial {
-            background: var(--gold-glow);
-            color: var(--gold);
-        }
         .xray-claim .text {
             font-size: 0.82rem;
             color: var(--text-secondary);
@@ -786,10 +765,6 @@
         .xray-claim .source-link:hover {
             background: rgba(46, 204, 113, 0.2);
             transform: scale(1.02);
-        }
-        .xray-claim .source-link .icon {
-            font-size: 0.7rem;
-            margin-right: 0.2rem;
         }
         .fact-check-result {
             margin-top: 0.8rem;
@@ -1352,13 +1327,6 @@
             background: rgba(255, 59, 92, 0.08);
             border-left: 3px solid var(--accent);
         }
-        .success-msg {
-            color: var(--green);
-            padding: 0.5rem;
-            border-radius: var(--radius-sm);
-            background: var(--green-glow);
-            border-left: 3px solid var(--green);
-        }
         .api-message {
             text-align: center;
             margin-bottom: 1rem;
@@ -1403,14 +1371,6 @@
         }
         .claim-verdict.partial {
             color: var(--gold);
-        }
-        .inline-link {
-            color: var(--green);
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
-        .inline-link:hover {
-            color: #55efc4;
         }
     </style>
 </head>
@@ -1486,8 +1446,8 @@
                         <button data-mode="factcheck">🔍 Fact-Check Claim</button>
                     </div>
                     <div class="lab-input-wrap">
-                        <input type="text" id="custom-question" placeholder="Ask a question or paste a claim to fact-check…" />
-                        <button id="ask-btn">Ask / Fact-Check</button>
+                        <input type="text" id="custom-question" placeholder="Ask a question or paste a claim…" />
+                        <button id="ask-btn">Ask</button>
                     </div>
                     <div id="preset-chips" class="chip-group">
                         <button class="chip" data-q="Who invented the light bulb?">💡 Light bulb</button>
@@ -1511,7 +1471,7 @@
 
                 <div class="terminal reveal reveal-stagger">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Ask a question or paste a claim to fact-check.</span></p>
+                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Ask a question or paste a claim.</span></p>
                     <p class="aline" id="lab-a">Awaiting your input...</p>
                     <div id="factcheck-result" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
                         <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔍 FACT-CHECK RESULT</div>
@@ -1684,13 +1644,12 @@
     </footer>
 
     <script>
+        // ── SIMPLE FIXED SCRIPT ──
         (function() {
-            // ── API CONFIGURATION ──
-            // USE THE SAME DOMAIN (no need for localhost on Render)
-            const API_BASE = '';
+            console.log('🚀 Website loaded!');
 
-            console.log('🚀 API_BASE:', API_BASE || '(same domain)');
-            console.log('🌐 Hostname:', window.location.hostname);
+            // API_BASE - empty means use same domain (works on Render)
+            const API_BASE = '';
 
             // ── DOM refs ──
             const labQ = document.getElementById('lab-q');
@@ -1742,10 +1701,10 @@
                     } else {
                         presetChips.style.display = 'flex';
                         factcheckChips.style.display = 'none';
-                        customInput.placeholder = 'Ask a question or paste a claim to fact-check…';
-                        askBtn.textContent = 'Ask / Fact-Check';
+                        customInput.placeholder = 'Ask a question or paste a claim…';
+                        askBtn.textContent = 'Ask';
                         xrayBtn.textContent = '🔬 X‑Ray This Answer';
-                        labQ.textContent = 'Ask a question or paste a claim to fact-check.';
+                        labQ.textContent = 'Ask a question or paste a claim.';
                         labA.textContent = 'Awaiting your input...';
                         labXray.style.display = 'none';
                         factcheckResult.style.display = 'none';
@@ -1757,7 +1716,7 @@
             // ── API helper ──
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
-                console.log(`📡 Calling API: ${url}`);
+                console.log(`📡 Calling: ${url}`);
 
                 try {
                     const res = await fetch(url, {
@@ -1767,44 +1726,17 @@
                     });
 
                     if (!res.ok) {
-                        const errorData = await res.text();
-                        let errorMsg;
+                        let errorMsg = `HTTP ${res.status}`;
                         try {
-                            const parsed = JSON.parse(errorData);
-                            errorMsg = parsed.error || `HTTP ${res.status}`;
-                        } catch {
-                            errorMsg = `HTTP ${res.status}: ${errorData}`;
-                        }
+                            const errData = await res.json();
+                            errorMsg = errData.error || errorMsg;
+                        } catch (e) {}
                         throw new Error(errorMsg);
                     }
 
                     return await res.json();
                 } catch (err) {
-                    console.error(`❌ API Error (${endpoint}):`, err);
-                    throw err;
-                }
-            }
-
-            async function callApiGet(endpoint) {
-                const url = `${API_BASE}${endpoint}`;
-                console.log(`📡 Calling API (GET): ${url}`);
-
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        const errorData = await res.text();
-                        let errorMsg;
-                        try {
-                            const parsed = JSON.parse(errorData);
-                            errorMsg = parsed.error || `HTTP ${res.status}`;
-                        } catch {
-                            errorMsg = `HTTP ${res.status}: ${errorData}`;
-                        }
-                        throw new Error(errorMsg);
-                    }
-                    return await res.json();
-                } catch (err) {
-                    console.error(`❌ API Error (${endpoint}):`, err);
+                    console.error(`❌ API Error:`, err);
                     throw err;
                 }
             }
@@ -1812,18 +1744,20 @@
             // ── Health check ──
             async function checkHealth() {
                 try {
-                    const data = await callApiGet('/api/health');
-                    if (data && data.status === 'ok') {
-                        apiStatus.textContent = '🟢 Online';
-                        apiStatus.className = 'status-badge online';
-                        return true;
-                    } else {
-                        apiStatus.textContent = '⚠️ Error';
-                        apiStatus.className = 'status-badge offline';
-                        return false;
+                    const url = `${API_BASE}/api/health`;
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'ok') {
+                            apiStatus.textContent = '🟢 Online';
+                            apiStatus.className = 'status-badge online';
+                            return true;
+                        }
                     }
-                } catch (error) {
-                    console.error('Health check error:', error);
+                    apiStatus.textContent = '🔴 Offline';
+                    apiStatus.className = 'status-badge offline';
+                    return false;
+                } catch (e) {
                     apiStatus.textContent = '🔴 Offline';
                     apiStatus.className = 'status-badge offline';
                     return false;
@@ -1831,84 +1765,53 @@
             }
 
             // ── Generate sources ──
-            function generateSources(claimText, claimStatus) {
-                const sourceDB = {
-                    'Edison invented the light bulb': [
-                        { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
-                        { title: 'Edison Papers Project - Rutgers University', url: 'https://edison.rutgers.edu/' }
+            function generateSources(claimText) {
+                const sources = {
+                    'Edison invented': [
+                        { title: 'US Patent 223,898 (1880)', url: 'https://patents.google.com/patent/US223898A/en' },
+                        { title: 'Edison Papers Project', url: 'https://edison.rutgers.edu/' }
                     ],
-                    'in 1879': [
-                        { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
-                        { title: 'Smithsonian - The Electric Light System of Thomas Edison', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' }
+                    '1879': [
+                        { title: 'US Patent 223,898 (1880)', url: 'https://patents.google.com/patent/US223898A/en' }
                     ],
-                    'Sharks have 206 bones': [
-                        { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' },
-                        { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' }
+                    'shark': [
+                        { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' }
                     ],
-                    'Einstein failed mathematics': [
-                        { title: 'Albert Einstein Archives - Early Education', url: 'https://www.albert-einstein.org/education.html' },
-                        { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' }
+                    'Einstein': [
+                        { title: 'Albert Einstein Archives', url: 'https://www.albert-einstein.org/' }
                     ],
-                    'Mount Everest is the tallest mountain': [
-                        { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' },
-                        { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' }
+                    'Mount Everest': [
+                        { title: 'USGS - Mount Everest', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' }
                     ],
-                    'The capital of Australia is Sydney': [
-                        { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' },
-                        { title: 'Parliament of Australia - Canberra', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' }
+                    'Australia': [
+                        { title: 'Australian Government - Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' }
+                    ],
+                    '10% of their brain': [
+                        { title: 'Scientific American - The 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' }
+                    ],
+                    'horned helmets': [
+                        { title: 'History.com - Viking Helmets', url: 'https://www.history.com/news/did-vikings-really-wear-horned-helmets' }
+                    ],
+                    'Napoleon': [
+                        { title: 'History.com - Was Napoleon Short?', url: 'https://www.history.com/news/was-napoleon-short' }
+                    ],
+                    'Great Wall': [
+                        { title: 'NASA - Great Wall from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' }
+                    ],
+                    'bulls': [
+                        { title: 'Live Science - Bulls and Red', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' }
                     ]
                 };
 
-                const defaultSources = [
-                    { title: 'Wikipedia - Common Misconceptions', url: 'https://en.wikipedia.org/wiki/List_of_common_misconceptions' },
-                    { title: 'Snopes - Fact Check Archive', url: 'https://www.snopes.com/fact-check/' }
-                ];
-
-                for (const [key, sources] of Object.entries(sourceDB)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase()) ||
-                        key.toLowerCase().includes(claimText.toLowerCase())) {
-                        return sources;
+                for (const [key, srcs] of Object.entries(sources)) {
+                    if (claimText.toLowerCase().includes(key.toLowerCase())) {
+                        return srcs;
                     }
                 }
-
-                if (claimText.includes('10% of their brain')) {
-                    return [
-                        { title: 'Scientific American - The 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' },
-                        { title: 'Psychology Today - The 10% Brain Myth Debunked', url: 'https://www.psychologytoday.com/us/blog/the-fallible-mind/201712/the-10-brain-myth' }
-                    ];
-                }
-                if (claimText.includes('horned helmets')) {
-                    return [
-                        { title: 'History.com - Did Vikings Wear Horned Helmets?', url: 'https://www.history.com/news/did-vikings-really-wear-horned-helmets' },
-                        { title: 'Smithsonian Magazine - The Viking Helmet Myth', url: 'https://www.smithsonianmag.com/smart-news/the-myth-of-the-viking-horned-helmet-180951817/' }
-                    ];
-                }
-                if (claimText.includes('Napoleon')) {
-                    return [
-                        { title: 'History.com - Was Napoleon Short?', url: 'https://www.history.com/news/was-napoleon-short' },
-                        { title: 'BBC - Napoleon\'s Height Myth', url: 'https://www.bbc.com/news/magazine-18554470' }
-                    ];
-                }
-                if (claimText.includes('Great Wall') || claimText.includes('visible from space')) {
-                    return [
-                        { title: 'NASA - Great Wall of China from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' },
-                        { title: 'National Geographic - Can You See the Great Wall from Space?', url: 'https://www.nationalgeographic.com/travel/article/see-great-wall-of-china-from-space' }
-                    ];
-                }
-                if (claimText.includes('bulls') || claimText.includes('red') || claimText.includes('bullfighting')) {
-                    return [
-                        { title: 'Live Science - Do Bulls Really Hate Red?', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' },
-                        { title: 'The Fact Site - Bulls and the Colour Red', url: 'https://www.thefactsite.com/do-bulls-hate-red/' }
-                    ];
-                }
-
-                return claimStatus === 'supported' ? [
-                    { title: 'Encyclopedia Britannica - Related Article', url: 'https://www.britannica.com/' },
-                    { title: 'Google Scholar - Search Results', url: 'https://scholar.google.com/' }
-                ] : defaultSources;
+                return [{ title: 'Encyclopedia Britannica', url: 'https://www.britannica.com/' }];
             }
 
-            // ── Lab: Ask AI ──
+            // ── Ask AI ──
             async function askAI(input) {
                 if (!input) return;
                 currentQuestion = input;
@@ -1928,59 +1831,43 @@
                         factcheckResult.style.display = 'block';
                         const claims = data.claims || [];
                         let html = '';
-
-                        let overallStatus = 'partial';
                         let unsupportedCount = 0;
-                        claims.forEach(c => {
-                            if (c.status === 'unsupported') unsupportedCount++;
-                        });
-                        if (unsupportedCount === 0 && claims.length > 0) overallStatus = 'correct';
-                        else if (unsupportedCount === claims.length) overallStatus = 'incorrect';
+
+                        let overall = 'partial';
+                        claims.forEach(c => { if (c.status === 'unsupported') unsupportedCount++; });
+                        if (unsupportedCount === 0 && claims.length > 0) overall = 'correct';
+                        else if (unsupportedCount === claims.length) overall = 'incorrect';
 
                         html += `<div class="fact-check-result">`;
-                        html += `<div class="verdict ${overallStatus}">`;
-                        if (overallStatus === 'correct') html += '✅ VERDICT: CORRECT - The claim is supported by evidence.';
-                        else if (overallStatus === 'incorrect') html += '❌ VERDICT: INCORRECT - The claim is not supported by evidence.';
-                        else html += '⚠️ VERDICT: PARTIALLY CORRECT - Some claims are supported, others are not.';
+                        html += `<div class="verdict ${overall}">`;
+                        if (overall === 'correct') html += '✅ VERDICT: CORRECT';
+                        else if (overall === 'incorrect') html += '❌ VERDICT: INCORRECT';
+                        else html += '⚠️ VERDICT: PARTIALLY CORRECT';
                         html += `</div>`;
 
-                        html += `<div style="margin-top:0.5rem;font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted);">📋 CLAIM ANALYSIS</div>`;
                         html += `<div class="fact-check-claims">`;
                         claims.forEach(c => {
-                            const verdict = c.status === 'supported' ? 'true' : (c.status === 'unsupported' ? 'false' :
-                                'partial');
-                            const verdictLabel = c.status === 'supported' ? '✅ Supported' : (c.status ===
-                                'unsupported' ? '❌ Unsupported' : '⚠️ Needs Context');
+                            const verdict = c.status === 'supported' ? 'true' : (c.status === 'unsupported' ?
+                                'false' : 'partial');
+                            const label = c.status === 'supported' ? '✅ Supported' : (c.status === 'unsupported' ?
+                                '❌ Unsupported' : '⚠️ Needs Context');
                             html += `<div class="claim-item">`;
-                            html += `<span style="font-size:0.82rem;">"${c.text}"</span>`;
-                            html += `<span class="claim-verdict ${verdict}">${verdictLabel}</span>`;
-                            html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem;">${c.explain}</div>`;
-
+                            html += `<span>"${c.text}"</span>`;
+                            html += `<span class="claim-verdict ${verdict}">${label}</span>`;
+                            html += `<div style="font-size:0.75rem;color:var(--text-muted);">${c.explain}</div>`;
                             if (c.status === 'supported') {
-                                const sources = generateSources(c.text, 'supported');
-                                html += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">`;
+                                const srcs = generateSources(c.text);
+                                html += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.2rem;">`;
                                 html += `<span class="sources-label">📚 Sources:</span>`;
-                                sources.forEach(src => {
-                                    html += `<a href="${src.url}" target="_blank" class="source-link">🔗 ${src.title}</a>`;
+                                srcs.forEach(s => {
+                                    html +=
+                                        `<a href="${s.url}" target="_blank" class="source-link">🔗 ${s.title}</a>`;
                                 });
                                 html += `</div>`;
                             }
                             html += `</div>`;
                         });
-                        html += `</div>`;
-
-                        const allSources = generateSources(input, 'supported');
-                        if (allSources.length > 0) {
-                            html += `<div style="margin-top:0.8rem;padding-top:0.5rem;border-top:1px solid var(--border);">`;
-                            html += `<div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);">📚 GENERAL SOURCES FOR THIS CLAIM</div>`;
-                            html += `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem;">`;
-                            allSources.forEach(src => {
-                                html += `<a href="${src.url}" target="_blank" class="source-link">🔗 ${src.title}</a>`;
-                            });
-                            html += `</div></div>`;
-                        }
-
-                        html += `</div>`;
+                        html += `</div></div>`;
                         factcheckContent.innerHTML = html;
 
                         if (unsupportedCount > 0) {
@@ -1996,9 +1883,7 @@
                             dashU += unsupportedCount;
                             updateDashboard();
                         }
-
                         xrayBtn.disabled = true;
-                        labConf.style.display = 'none';
                     } else {
                         const data = await callApi('/api/ask', { question: input, mode: 'simple' });
                         currentAnswer = data.answer;
@@ -2010,19 +1895,16 @@
                         factcheckResult.style.display = 'none';
                     }
                 } catch (err) {
-                    labA.innerHTML = `
-                        <span class="error-msg">⚠️ Error: ${err.message}</span>
-                    `;
-                    console.error('Ask AI error:', err);
+                    labA.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
                 }
             }
 
-            // ── X-Ray / Fact-Check Button ──
+            // ── X-Ray ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
                 labXray.style.display = 'block';
                 labClaims.innerHTML =
-                    '<div class="xray-claim"><span class="badge context">⏳</span><div class="text">Analyzing claims...</div></div>';
+                    '<div class="xray-claim"><span class="badge context">⏳ Analyzing...</span></div>';
 
                 try {
                     const data = await callApi('/api/analyze', { question: currentQuestion, answer: currentAnswer });
@@ -2033,46 +1915,40 @@
                     claims.forEach(c => {
                         const d = document.createElement('div');
                         d.className = 'xray-claim';
-
                         const header = document.createElement('div');
                         header.className = 'claim-header';
-
                         const b = document.createElement('span');
                         b.className = 'badge ' + c.status;
                         const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
                             unsupported: '❌ UNSUPPORTED' };
                         b.textContent = labels[c.status] || c.status;
-
                         const t = document.createElement('div');
                         t.className = 'text';
                         t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
-
                         header.appendChild(b);
                         header.appendChild(t);
                         d.appendChild(header);
 
                         if (c.status === 'supported') {
-                            const sources = generateSources(c.text, 'supported');
-                            if (sources.length > 0) {
-                                const sourcesDiv = document.createElement('div');
-                                sourcesDiv.className = 'sources';
-                                const label = document.createElement('span');
-                                label.className = 'sources-label';
-                                label.textContent = '📚 Sources:';
-                                sourcesDiv.appendChild(label);
-
-                                sources.forEach(src => {
+                            const srcs = generateSources(c.text);
+                            if (srcs.length > 0) {
+                                const sd = document.createElement('div');
+                                sd.className = 'sources';
+                                const lbl = document.createElement('span');
+                                lbl.className = 'sources-label';
+                                lbl.textContent = '📚 Sources:';
+                                sd.appendChild(lbl);
+                                srcs.forEach(s => {
                                     const a = document.createElement('a');
-                                    a.href = src.url;
+                                    a.href = s.url;
                                     a.target = '_blank';
                                     a.className = 'source-link';
-                                    a.innerHTML = `🔗 ${src.title}`;
-                                    sourcesDiv.appendChild(a);
+                                    a.innerHTML = `🔗 ${s.title}`;
+                                    sd.appendChild(a);
                                 });
-                                d.appendChild(sourcesDiv);
+                                d.appendChild(sd);
                             }
                         }
-
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -2109,8 +1985,8 @@
                     document.querySelector('.mode-selector button[data-mode="ask"]').classList.add('active');
                     presetChips.style.display = 'flex';
                     factcheckChips.style.display = 'none';
-                    customInput.placeholder = 'Ask a question or paste a claim to fact-check…';
-                    askBtn.textContent = 'Ask / Fact-Check';
+                    customInput.placeholder = 'Ask a question or paste a claim…';
+                    askBtn.textContent = 'Ask';
                     xrayBtn.textContent = '🔬 X‑Ray This Answer';
                     xrayBtn.disabled = true;
                     labXray.style.display = 'none';
@@ -2126,7 +2002,7 @@
                     currentMode = 'factcheck';
                     modeBtns.forEach(b => b.classList.remove('active'));
                     document.querySelector('.mode-selector button[data-mode="factcheck"]').classList.add(
-                    'active');
+                        'active');
                     presetChips.style.display = 'none';
                     factcheckChips.style.display = 'flex';
                     customInput.placeholder = 'Paste a claim to fact-check…';
@@ -2138,7 +2014,7 @@
                 });
             });
 
-            // ── Custom question ──
+            // ── Custom input ──
             askBtn.addEventListener('click', () => {
                 const q = customInput.value.trim();
                 if (q) { askAI(q);
@@ -2164,27 +2040,21 @@
                 apiMessage.className = 'api-message show';
                 apiMessage.style.background = type === 'error' ? 'rgba(255,59,92,0.1)' : 'rgba(46,204,113,0.1)';
                 apiMessage.style.color = type === 'error' ? '#ff3b5c' : '#2ecc71';
-                apiMessage.style.borderLeft = type === 'error' ? '3px solid #ff3b5c' : '3px solid #2ecc71';
             }
 
             async function generateChallenge() {
                 challengeGrid.innerHTML =
-                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating a new challenge...</div></div>';
+                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating...</div></div>';
                 apiMessage.className = 'api-message';
 
                 try {
                     const data = await callApi('/api/challenge', {});
                     renderChallenge(data);
-                    showMessage('✅ Challenge generated successfully!', 'success');
+                    showMessage('✅ Challenge generated!', 'success');
                 } catch (err) {
-                    challengeGrid.innerHTML = `
-                        <div class="challenge-card">
-                            <div style="text-align:center;padding:1rem;color:var(--accent);">
-                                ❌ Failed to generate challenge: ${err.message}
-                            </div>
-                        </div>
-                    `;
-                    showMessage(`❌ Error: ${err.message}`, 'error');
+                    challengeGrid.innerHTML =
+                        `<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--accent);">❌ ${err.message}</div></div>`;
+                    showMessage(`❌ ${err.message}`, 'error');
                 }
             }
 
@@ -2192,8 +2062,7 @@
                 const card = document.createElement('div');
                 card.className = 'challenge-card';
                 const isCorrectTrue = data.correct_answer.toLowerCase().includes('true') ||
-                    data.correct_answer.toLowerCase().includes('yes') ||
-                    data.correct_answer.toLowerCase().includes('correct');
+                    data.correct_answer.toLowerCase().includes('yes');
 
                 card.innerHTML = `
                     <span class="status pending">❓ CHALLENGE</span>
@@ -2235,7 +2104,7 @@
                         status.className = 'status ' + (isCorrect ? 'correct' : 'wrong');
                         result.style.display = 'block';
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
-                        result.textContent = isCorrect ? '✓ You got it right!' : '✗ Not quite.';
+                        result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
                         revealDiv.style.display = 'block';
 
                         if (isCorrect) {
@@ -2275,8 +2144,8 @@
                 const simpleEl = document.getElementById('simple-answer');
                 const detailedEl = document.getElementById('detailed-answer');
 
-                simpleEl.innerHTML = '<span class="loading-spinner"></span> Fetching simple answer...';
-                detailedEl.innerHTML = '<span class="loading-spinner"></span> Fetching detailed answer...';
+                simpleEl.innerHTML = '<span class="loading-spinner"></span> Loading...';
+                detailedEl.innerHTML = '<span class="loading-spinner"></span> Loading...';
 
                 try {
                     const [simpleRes, detailedRes] = await Promise.all([
@@ -2293,18 +2162,18 @@
                     ]);
 
                     const countStatus = (claims, status) => claims.filter(c => c.status === status).length;
-                    const simpleClaims = simpleAnalysis.claims || [];
-                    const detailedClaims = detailedAnalysis.claims || [];
+                    const sClaims = simpleAnalysis.claims || [];
+                    const dClaims = detailedAnalysis.claims || [];
 
-                    const sSup = countStatus(simpleClaims, 'supported');
-                    const sCtx = countStatus(simpleClaims, 'context');
-                    const sUnsup = countStatus(simpleClaims, 'unsupported');
-                    const sTotal = simpleClaims.length || 1;
+                    const sSup = countStatus(sClaims, 'supported');
+                    const sCtx = countStatus(sClaims, 'context');
+                    const sUnsup = countStatus(sClaims, 'unsupported');
+                    const sTotal = sClaims.length || 1;
 
-                    const dSup = countStatus(detailedClaims, 'supported');
-                    const dCtx = countStatus(detailedClaims, 'context');
-                    const dUnsup = countStatus(detailedClaims, 'unsupported');
-                    const dTotal = detailedClaims.length || 1;
+                    const dSup = countStatus(dClaims, 'supported');
+                    const dCtx = countStatus(dClaims, 'context');
+                    const dUnsup = countStatus(dClaims, 'unsupported');
+                    const dTotal = dClaims.length || 1;
 
                     const avgSup = Math.round(((sSup / sTotal) + (dSup / dTotal)) / 2 * 100);
                     const avgCtx = Math.round(((sCtx / sTotal) + (dCtx / dTotal)) / 2 * 100);
@@ -2320,45 +2189,93 @@
                     updateDashboard();
 
                 } catch (err) {
-                    simpleEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
-                    detailedEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
+                    simpleEl.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
+                    detailedEl.innerHTML = `<span class="error-msg">⚠️ ${err.message}</span>`;
                 }
             });
 
             function animateExpBar(barId, valId, target) {
                 const bar = document.getElementById(barId);
                 const val = document.getElementById(valId);
-                if (reduceMotion) { bar.style.width = target + '%';
-                    val.textContent = target + '%'; return; }
                 bar.style.width = target + '%';
-                let start = null;
+                val.textContent = target + '%';
+            }
 
-                function step(ts) {
-                    if (!start) start = ts;
-                    const p = Math.min(1, (ts - start) / 800);
-                    const current = Math.round(p * target);
-                    val.textContent = current + '%';
-                    if (p < 1) requestAnimationFrame(step);
+            // ── Hero typewriter ──
+            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
+            const heroEl = document.getElementById('hero-answer');
+            const heroFlag = document.getElementById('hero-flag');
+            const heroFill = document.getElementById('hero-fill');
+            const heroPct = document.getElementById('hero-pct');
+
+            function typeText(el, text, speed, done) {
+                let i = 0;
+                el.innerHTML = '';
+                const cursor = document.createElement('span');
+                cursor.className = 'typecursor';
+                cursor.textContent = '\u00A0';
+
+                function step() {
+                    if (i <= text.length) {
+                        el.textContent = text.slice(0, i);
+                        el.appendChild(cursor);
+                        i++;
+                        setTimeout(step, speed);
+                    } else {
+                        cursor.remove();
+                        if (done) done();
+                    }
                 }
-                requestAnimationFrame(step);
+                step();
+            }
+
+            function animateFill(el, pctEl, target) {
+                el.style.width = target + '%';
+                pctEl.textContent = target + '%';
+            }
+
+            function runHero() {
+                typeText(heroEl, heroAnswer, 25, () => {
+                    animateFill(heroFill, heroPct, 96);
+                    setTimeout(() => heroFlag.classList.add('show'), 400);
+                });
+            }
+            runHero();
+
+            // ── Particles ──
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const s = document.createElement('span');
+                const size = 2 + Math.random() * 6;
+                s.style.width = size + 'px';
+                s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.animationDuration = 15 + Math.random() * 25 + 's';
+                s.style.animationDelay = Math.random() * 20 + 's';
+                particles.appendChild(s);
             }
 
             // ── Init ──
-            // Check API status
             checkHealth();
-
-            // Auto-generate a challenge on load
             setTimeout(generateChallenge, 500);
-
-            // Auto-run experiment
             setTimeout(() => runExpBtn.click(), 800);
-
-            // Load first question
             askAI('Who invented the light bulb?');
             document.querySelector('#preset-chips .chip[data-q="Who invented the light bulb?"]').classList.add('active');
-
-            // Periodic health check
             setInterval(checkHealth, 30000);
+
+            // ── Scroll reveal ──
+            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) { e.target.classList.add('in-view');
+                            io.unobserve(e.target); }
+                    });
+                }, { threshold: 0.1 });
+                revealEls.forEach(el => io.observe(el));
+            } else {
+                revealEls.forEach(el => el.classList.add('in-view'));
+            }
 
         })();
     </script>
