@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { OpenAI } = require('openai');
 
 const app = express();
@@ -10,9 +11,31 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// ─── YOUR NVIDIA NIM API KEY ───
+// ─── PUBLIC FOLDER ───
+const publicPath = path.join(__dirname, 'public');
+const indexPath = path.join(publicPath, 'index.html');
+
+console.log(`📁 Public folder: ${publicPath}`);
+
+if (!fs.existsSync(publicPath)) {
+    fs.mkdirSync(publicPath, { recursive: true });
+}
+
+if (!fs.existsSync(indexPath)) {
+    const fallbackHTML = `<!DOCTYPE html>
+<html>
+<head><title>AI Lab</title></head>
+<body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
+    <div style="text-align:center;"><h1>🧠 AI Lab</h1><p>Server running ✅</p></div>
+</body>
+</html>`;
+    fs.writeFileSync(indexPath, fallbackHTML);
+}
+
+app.use(express.static(publicPath));
+
+// ─── NVIDIA NIM API KEY ───
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
@@ -33,14 +56,25 @@ const client = new OpenAI({
 });
 
 // ─── NVIDIA NIM FREE MODELS ───
-// Choose one of these:
-// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
-// 2. 'mistralai/mistral-large'       - Good quality
-// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
 const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
+
+// ─── CACHE ───
+const cache = new Map();
+const CACHE_TTL = 3600000;
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
+    const cacheKey = `${prompt}-${temperature}-${maxTokens}`;
+    
+    if (cache.has(cacheKey)) {
+        const cached = cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            console.log('📦 Cached response');
+            return cached.data;
+        }
+        cache.delete(cacheKey);
+    }
+    
     try {
         const completion = await client.chat.completions.create({
             model: FREE_MODEL,
@@ -48,7 +82,9 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
             temperature: temperature,
             max_tokens: maxTokens,
         });
-        return completion.choices[0].message.content;
+        const result = completion.choices[0].message.content;
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
     } catch (error) {
         console.error('NVIDIA NIM API Error:', error);
         throw error;
@@ -57,6 +93,17 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
 
 // ─── HELPER: Generate JSON ───
 async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
+    const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
+    
+    if (cache.has(cacheKey)) {
+        const cached = cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            console.log('📦 Cached JSON');
+            return cached.data;
+        }
+        cache.delete(cacheKey);
+    }
+    
     try {
         const completion = await client.chat.completions.create({
             model: FREE_MODEL,
@@ -66,15 +113,29 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
         });
         const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
+        let result;
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            result = JSON.parse(jsonMatch[0]);
+        } else {
+            result = JSON.parse(text);
         }
-        return JSON.parse(text);
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
     } catch (error) {
         console.error('NVIDIA NIM JSON Error:', error);
         throw error;
     }
 }
+
+// ─── CLEAN CACHE ───
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+        if (now - value.timestamp > CACHE_TTL) {
+            cache.delete(key);
+        }
+    }
+}, 60000);
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
@@ -85,7 +146,8 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
         provider: 'NVIDIA NIM',
-        model: FREE_MODEL
+        model: FREE_MODEL,
+        cacheSize: cache.size
     });
 });
 
@@ -165,7 +227,10 @@ app.post('/api/challenge', async (req, res) => {
 
 // ─── SERVE INDEX.HTML ───
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(indexPath);
 });
 
 // ─── START SERVER ───
@@ -176,4 +241,5 @@ app.listen(PORT, () => {
     console.log(`✅ Model: ${FREE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
+    console.log(`📦 Cache: Enabled`);
 });
