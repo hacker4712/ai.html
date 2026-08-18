@@ -10,17 +10,13 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from public folder
 app.use(express.static('public'));
 
-// ─── YOUR API KEY ───
-// Get from: https://aistudio.google.com/apikey
-// Free tier: 60 requests/min, 1,500 requests/day
-const API_KEY = process.env.GOOGLE_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+// ─── READ API KEY FROM ENVIRONMENT ───
+const API_KEY = process.env.GOOGLE_API_KEY;
 
-if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-    console.error('❌ GOOGLE_API_KEY is missing! Get one from https://aistudio.google.com/apikey');
+if (!API_KEY) {
+    console.error('❌ GOOGLE_API_KEY is missing! Add it to Render Environment Variables.');
 } else {
     console.log('✅ GOOGLE_API_KEY is set');
 }
@@ -32,7 +28,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash-exp',
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -52,7 +48,7 @@ async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500
 async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash-exp',
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -81,7 +77,7 @@ app.get('/api/health', (req, res) => {
         status: 'ok', 
         message: 'Server is running with Gemini API',
         timestamp: new Date().toISOString(),
-        apiKeySet: !!(API_KEY && API_KEY !== 'YOUR_GEMINI_API_KEY_HERE'),
+        apiKeySet: !!API_KEY,
         provider: 'Google Gemini'
     });
 });
@@ -94,7 +90,7 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
@@ -121,7 +117,7 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
@@ -143,7 +139,7 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
@@ -170,5 +166,5 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
     console.log(`✅ API Provider: Google Gemini`);
-    console.log(`✅ API Key: ${(API_KEY && API_KEY !== 'YOUR_GEMINI_API_KEY_HERE') ? '✓ Set' : '✗ Missing'}`);
+    console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
 });
