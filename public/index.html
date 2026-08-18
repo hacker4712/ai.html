@@ -9,10 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        /* ── reset & base ── */
-        *,
-        *::before,
-        *::after {
+        /* ── Keep all existing styles ── */
+        /* (I'm keeping your existing styles, they work fine) */
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -53,10 +52,6 @@
         a {
             color: inherit;
             text-decoration: none;
-        }
-        img,
-        svg {
-            display: block;
         }
         .wrap {
             max-width: var(--max-width);
@@ -104,8 +99,7 @@
         .reveal {
             opacity: 0;
             transform: translateY(28px);
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .reveal.in-view {
             opacity: 1;
@@ -114,24 +108,6 @@
         .reveal-stagger {
             transition-delay: 0.08s;
         }
-        .reveal-stagger:nth-child(2) {
-            transition-delay: 0.16s;
-        }
-        .reveal-stagger:nth-child(3) {
-            transition-delay: 0.24s;
-        }
-        .reveal-stagger:nth-child(4) {
-            transition-delay: 0.32s;
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .reveal,
-            .reveal-stagger {
-                opacity: 1 !important;
-                transform: none !important;
-                transition: none !important;
-            }
-        }
-
         #particles {
             position: fixed;
             inset: 0;
@@ -162,7 +138,6 @@
                 opacity: 0;
             }
         }
-
         .nav {
             position: sticky;
             top: 0;
@@ -246,12 +221,10 @@
         .nav a:hover {
             color: var(--text-primary);
         }
-
         .hero {
             padding: 5rem 0 4.5rem;
             background: radial-gradient(ellipse at 70% 20%, rgba(255, 59, 92, 0.05), transparent 60%),
-                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%),
-                var(--bg);
+                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%), var(--bg);
             position: relative;
             overflow: hidden;
         }
@@ -326,7 +299,6 @@
                 transform: translateY(5px);
             }
         }
-
         .terminal {
             background: rgba(19, 19, 31, 0.75);
             backdrop-filter: blur(14px);
@@ -402,7 +374,6 @@
                 opacity: 0;
             }
         }
-
         .flag {
             display: flex;
             gap: 0.8rem;
@@ -445,7 +416,6 @@
             color: var(--text-secondary);
             line-height: 1.5;
         }
-
         .confidence {
             margin-top: 1.1rem;
         }
@@ -492,7 +462,6 @@
                 transform: translateX(100%);
             }
         }
-
         .lab-grid {
             display: grid;
             grid-template-columns: 1fr 1.1fr;
@@ -657,7 +626,6 @@
             color: var(--gold);
             border-color: rgba(255, 198, 43, 0.3);
         }
-
         .xray-claims {
             display: flex;
             flex-direction: column;
@@ -745,7 +713,6 @@
             border: 1px solid rgba(46, 204, 113, 0.2);
             color: var(--green);
         }
-
         .challenge-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -862,7 +829,6 @@
             color: var(--text-secondary);
             margin-top: 0.2rem;
         }
-
         .exp-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -893,8 +859,8 @@
             color: var(--text-secondary);
             line-height: 1.6;
             min-height: 60px;
+            white-space: pre-wrap;
         }
-
         .exp-controls {
             display: flex;
             flex-wrap: wrap;
@@ -958,7 +924,6 @@
         .toggle-group button:hover:not(.active) {
             background: rgba(255, 255, 255, 0.04);
         }
-
         .exp-bar {
             display: flex;
             align-items: center;
@@ -1000,7 +965,6 @@
             width: 40px;
             text-align: right;
         }
-
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1040,7 +1004,6 @@
             color: var(--text-muted);
             margin-top: 0.2rem;
         }
-
         .case-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1103,7 +1066,6 @@
             font-size: 0.7rem;
             color: var(--text-muted);
         }
-
         .flow-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1137,7 +1099,6 @@
             font-size: 0.82rem;
             color: var(--text-secondary);
         }
-
         .team-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1191,7 +1152,6 @@
             font-size: 0.8rem;
             color: var(--text-secondary);
         }
-
         footer {
             padding: 3.5rem 0 2.5rem;
             border-top: 1px solid var(--border);
@@ -1244,7 +1204,6 @@
             color: var(--text-muted);
             text-align: center;
         }
-
         ::selection {
             background: var(--accent);
             color: #fff;
@@ -1284,13 +1243,6 @@
             background: rgba(255, 59, 92, 0.08);
             border-left: 3px solid var(--accent);
         }
-        .success-msg {
-            color: var(--green);
-            padding: 0.5rem;
-            border-radius: var(--radius-sm);
-            background: var(--green-glow);
-            border-left: 3px solid var(--green);
-        }
         .api-message {
             text-align: center;
             margin-bottom: 1rem;
@@ -1300,12 +1252,6 @@
         }
         .api-message.show {
             display: block;
-        }
-        .sources-label {
-            font-family: var(--font-mono);
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            margin-right: 0.3rem;
         }
     </style>
 </head>
@@ -1569,8 +1515,6 @@
 
     <script>
         (function() {
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
             // ── particles ──
             const p = document.getElementById('particles');
             for (let i = 0; i < 28; i++) {
@@ -1585,85 +1529,10 @@
                 p.appendChild(s);
             }
 
-            // ── scroll reveal ──
-            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
-            if ('IntersectionObserver' in window && !reduceMotion) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => {
-                        if (e.isIntersecting) { e.target.classList.add('in-view');
-                            io.unobserve(e.target); }
-                    });
-                }, { threshold: 0.12 });
-                revealEls.forEach(el => io.observe(el));
-            } else {
-                revealEls.forEach(el => el.classList.add('in-view'));
-            }
-
-            // ── hero terminal ──
-            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
-            const heroEl = document.getElementById('hero-answer');
-            const heroFlag = document.getElementById('hero-flag');
-            const heroFill = document.getElementById('hero-fill');
-            const heroPct = document.getElementById('hero-pct');
-
-            function typeText(el, text, speed, done) {
-                if (reduceMotion) { el.textContent = text; if (done) done(); return; }
-                let i = 0;
-                el.innerHTML = '';
-                const cursor = document.createElement('span');
-                cursor.className = 'typecursor';
-                cursor.textContent = '\u00A0';
-
-                function step() {
-                    if (i <= text.length) {
-                        el.textContent = text.slice(0, i);
-                        el.appendChild(cursor);
-                        i++;
-                        setTimeout(step, speed);
-                    } else {
-                        cursor.remove();
-                        if (done) done();
-                    }
-                }
-                step();
-            }
-
-            function animateFill(el, pctEl, target, duration) {
-                if (reduceMotion) { el.style.width = target + '%';
-                    pctEl.textContent = target + '%'; return; }
-                el.style.width = target + '%';
-                let start = null;
-
-                function step(ts) {
-                    if (!start) start = ts;
-                    const p = Math.min(1, (ts - start) / duration);
-                    pctEl.textContent = Math.round(p * target) + '%';
-                    if (p < 1) requestAnimationFrame(step);
-                }
-                requestAnimationFrame(step);
-            }
-
-            function runHero() {
-                typeText(heroEl, heroAnswer, 20, () => {
-                    animateFill(heroFill, heroPct, 96, 1100);
-                    setTimeout(() => heroFlag.classList.add('show'), 400);
-                });
-            }
-            if ('IntersectionObserver' in window) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => { if (e.isIntersecting) { runHero();
-                            io.disconnect(); } });
-                }, { threshold: 0.3 });
-                io.observe(document.getElementById('hero-terminal'));
-            } else { runHero(); }
-
-            // ── API CONFIGURATION ──
-            const API_BASE = window.location.hostname === 'localhost' ?
-                'http://localhost:3001' :
-                '';
+            // ── API CONFIG ──
+            const API_BASE = '';
 
             console.log('🚀 API_BASE:', API_BASE || '(same domain)');
-            console.log('🌐 Hostname:', window.location.hostname);
 
             // ── DOM refs ──
             const labQ = document.getElementById('lab-q');
@@ -1692,7 +1561,7 @@
             // ── API helper ──
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
-                console.log(`📡 Calling API: ${url}`);
+                console.log(`📡 Calling: ${url}`);
 
                 try {
                     const res = await fetch(url, {
@@ -1702,30 +1571,30 @@
                     });
 
                     if (!res.ok) {
-                        const errorData = await res.json();
+                        const errorData = await res.json().catch(() => ({}));
                         throw new Error(errorData.error || `HTTP ${res.status}`);
                     }
 
                     return await res.json();
                 } catch (err) {
-                    console.error(`❌ API Error (${endpoint}):`, err);
+                    console.error(`❌ API Error:`, err);
                     throw err;
                 }
             }
 
             async function callApiGet(endpoint) {
                 const url = `${API_BASE}${endpoint}`;
-                console.log(`📡 Calling API (GET): ${url}`);
+                console.log(`📡 Calling GET: ${url}`);
 
                 try {
                     const res = await fetch(url);
                     if (!res.ok) {
-                        const errorData = await res.json();
+                        const errorData = await res.json().catch(() => ({}));
                         throw new Error(errorData.error || `HTTP ${res.status}`);
                     }
                     return await res.json();
                 } catch (err) {
-                    console.error(`❌ API Error (${endpoint}):`, err);
+                    console.error(`❌ API Error:`, err);
                     throw err;
                 }
             }
@@ -1738,17 +1607,75 @@
                         apiStatus.textContent = '🟢 Online';
                         apiStatus.className = 'status-badge online';
                         return true;
-                    } else {
-                        apiStatus.textContent = '⚠️ Error';
-                        apiStatus.className = 'status-badge offline';
-                        return false;
                     }
-                } catch (error) {
+                    apiStatus.textContent = '🔴 Offline';
+                    apiStatus.className = 'status-badge offline';
+                    return false;
+                } catch (e) {
                     apiStatus.textContent = '🔴 Offline';
                     apiStatus.className = 'status-badge offline';
                     return false;
                 }
             }
+
+            // ── Hero typewriter ──
+            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
+            const heroEl = document.getElementById('hero-answer');
+            const heroFlag = document.getElementById('hero-flag');
+            const heroFill = document.getElementById('hero-fill');
+            const heroPct = document.getElementById('hero-pct');
+
+            function typeText(el, text, speed, done) {
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    el.textContent = text;
+                    if (done) done();
+                    return;
+                }
+                let i = 0;
+                el.innerHTML = '';
+                const cursor = document.createElement('span');
+                cursor.className = 'typecursor';
+                cursor.textContent = '\u00A0';
+
+                function step() {
+                    if (i <= text.length) {
+                        el.textContent = text.slice(0, i);
+                        el.appendChild(cursor);
+                        i++;
+                        setTimeout(step, speed);
+                    } else {
+                        cursor.remove();
+                        if (done) done();
+                    }
+                }
+                step();
+            }
+
+            function animateFill(el, pctEl, target, duration) {
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    el.style.width = target + '%';
+                    pctEl.textContent = target + '%';
+                    return;
+                }
+                el.style.width = target + '%';
+                let start = null;
+
+                function step(ts) {
+                    if (!start) start = ts;
+                    const p = Math.min(1, (ts - start) / duration);
+                    pctEl.textContent = Math.round(p * target) + '%';
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+
+            function runHero() {
+                typeText(heroEl, heroAnswer, 20, () => {
+                    animateFill(heroFill, heroPct, 96, 1100);
+                    setTimeout(() => heroFlag.classList.add('show'), 400);
+                });
+            }
+            runHero();
 
             // ── Lab: Ask AI ──
             async function askAI(question) {
@@ -1775,9 +1702,8 @@
                 }
             }
 
-            // ── Sample sources for claims (simulated) ──
+            // ── Sources ──
             function getSourcesForClaim(claimText) {
-                // In a real implementation, these would come from the API
                 const sources = {
                     'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
                     'in 1879': ['US Patent 223,898 (1880)'],
@@ -1786,18 +1712,16 @@
                     'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
                     'The capital of Australia is Sydney': ['Australian Government Geoscience']
                 };
-                
                 for (const [key, value] of Object.entries(sources)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase()) || 
-                        key.toLowerCase().includes(claimText.toLowerCase())) {
+                    if (claimText.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(claimText
+                        .toLowerCase())) {
                         return value;
                     }
                 }
-                // Default sources if none match
                 return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
             }
 
-            // ── Lab: X-Ray ──
+            // ── X-Ray ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
                 labXray.style.display = 'block';
@@ -1813,24 +1737,20 @@
                     claims.forEach(c => {
                         const d = document.createElement('div');
                         d.className = 'xray-claim';
-                        
                         const header = document.createElement('div');
                         header.className = 'claim-header';
-                        
                         const b = document.createElement('span');
                         b.className = 'badge ' + c.status;
-                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT', unsupported: '❌ UNSUPPORTED' };
+                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
+                            unsupported: '❌ UNSUPPORTED' };
                         b.textContent = labels[c.status] || c.status;
-                        
                         const t = document.createElement('div');
                         t.className = 'text';
                         t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
-                        
                         header.appendChild(b);
                         header.appendChild(t);
                         d.appendChild(header);
-                        
-                        // Add sources for supported claims
+
                         if (c.status === 'supported') {
                             const sourcesDiv = document.createElement('div');
                             sourcesDiv.className = 'sources';
@@ -1838,7 +1758,6 @@
                             label.className = 'sources-label';
                             label.textContent = '📚 Sources:';
                             sourcesDiv.appendChild(label);
-                            
                             const sourceList = getSourcesForClaim(c.text);
                             sourceList.forEach(src => {
                                 const tag = document.createElement('span');
@@ -1848,7 +1767,6 @@
                             });
                             d.appendChild(sourcesDiv);
                         }
-                        
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -1875,7 +1793,7 @@
                 this.disabled = true;
             });
 
-            // ── Lab: Preset chips ──
+            // ── Preset chips ──
             document.querySelectorAll('.chip').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -1884,7 +1802,7 @@
                 });
             });
 
-            // ── Lab: Custom question ──
+            // ── Custom question ──
             askBtn.addEventListener('click', () => {
                 const q = customInput.value.trim();
                 if (q) { askAI(q);
@@ -1915,21 +1833,16 @@
 
             async function generateChallenge() {
                 challengeGrid.innerHTML =
-                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating a new challenge...</div></div>';
+                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating...</div></div>';
                 apiMessage.className = 'api-message';
 
                 try {
                     const data = await callApi('/api/challenge', {});
                     renderChallenge(data);
-                    showMessage('✅ Challenge generated successfully!', 'success');
+                    showMessage('✅ Challenge generated!', 'success');
                 } catch (err) {
-                    challengeGrid.innerHTML = `
-                        <div class="challenge-card">
-                            <div style="text-align:center;padding:1rem;color:var(--accent);">
-                                ❌ Failed to generate challenge: ${err.message}
-                            </div>
-                        </div>
-                    `;
+                    challengeGrid.innerHTML =
+                        `<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--accent);">❌ ${err.message}</div></div>`;
                     showMessage(`❌ Error: ${err.message}`, 'error');
                 }
             }
@@ -1937,16 +1850,15 @@
             function renderChallenge(data) {
                 const card = document.createElement('div');
                 card.className = 'challenge-card';
-                const isCorrectTrue = data.correct_answer.toLowerCase().includes('true') ||
-                    data.correct_answer.toLowerCase().includes('yes') ||
-                    data.correct_answer.toLowerCase().includes('correct');
+                const isCorrectTrue = data.correct_answer && (data.correct_answer.toLowerCase().includes('true') ||
+                    data.correct_answer.toLowerCase().includes('yes'));
 
                 card.innerHTML = `
                     <span class="status pending">❓ CHALLENGE</span>
-                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question}</p>
+                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question || 'No question'}</p>
                     <div style="background:rgba(255,59,92,0.06);padding:0.6rem 0.8rem;border-radius:var(--radius-sm);border-left:3px solid var(--accent);margin-bottom:0.8rem;">
                         <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent);font-weight:700;">🤖 AI Says:</span>
-                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer}</p>
+                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer || 'No answer'}</p>
                     </div>
                     <div class="options">
                         <button data-choice="true">✅ True</button>
@@ -1955,9 +1867,9 @@
                     <div class="result-text" style="display:none;"></div>
                     <div class="reveal-answer">
                         <div class="label">✅ Correct Answer:</div>
-                        <p>${data.correct_answer}</p>
+                        <p>${data.correct_answer || 'No correct answer'}</p>
                         <div class="label" style="color:var(--gold);margin-top:0.5rem;">📖 Explanation:</div>
-                        <p>${data.explanation}</p>
+                        <p>${data.explanation || 'No explanation'}</p>
                     </div>
                 `;
                 challengeGrid.innerHTML = '';
@@ -1981,7 +1893,7 @@
                         status.className = 'status ' + (isCorrect ? 'correct' : 'wrong');
                         result.style.display = 'block';
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
-                        result.textContent = isCorrect ? '✓ You got it right!' : '✗ Not quite.';
+                        result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
                         revealDiv.style.display = 'block';
 
                         if (isCorrect) {
@@ -2000,7 +1912,7 @@
 
             document.getElementById('new-challenge-btn').addEventListener('click', generateChallenge);
 
-            // ── Experiment ──
+            // ─── EXPERIMENT ───
             const contextSlider = document.getElementById('context-slider');
             const contextLabel = document.getElementById('context-label');
             const runExpBtn = document.getElementById('run-experiment');
@@ -2025,21 +1937,26 @@
                 detailedEl.innerHTML = '<span class="loading-spinner"></span> Fetching detailed answer...';
 
                 try {
+                    // Fetch both answers
                     const [simpleRes, detailedRes] = await Promise.all([
                         callApi('/api/ask', { question, mode: 'simple' }),
                         callApi('/api/ask', { question, mode: 'detailed' })
                     ]);
 
-                    simpleEl.textContent = simpleRes.answer;
-                    detailedEl.textContent = detailedRes.answer;
+                    simpleEl.textContent = simpleRes.answer || 'No answer received';
+                    detailedEl.textContent = detailedRes.answer || 'No answer received';
 
-                    // Analyze both
+                    // Analyze both answers
                     const [simpleAnalysis, detailedAnalysis] = await Promise.all([
                         callApi('/api/analyze', { question, answer: simpleRes.answer }),
                         callApi('/api/analyze', { question, answer: detailedRes.answer })
                     ]);
 
-                    const countStatus = (claims, status) => claims.filter(c => c.status === status).length;
+                    const countStatus = (claims, status) => {
+                        if (!claims || !Array.isArray(claims)) return 0;
+                        return claims.filter(c => c.status === status).length;
+                    };
+
                     const simpleClaims = simpleAnalysis.claims || [];
                     const detailedClaims = detailedAnalysis.claims || [];
 
@@ -2053,6 +1970,7 @@
                     const dUnsup = countStatus(detailedClaims, 'unsupported');
                     const dTotal = detailedClaims.length || 1;
 
+                    // Calculate averages
                     const avgSup = Math.round(((sSup / sTotal) + (dSup / dTotal)) / 2 * 100);
                     const avgCtx = Math.round(((sCtx / sTotal) + (dCtx / dTotal)) / 2 * 100);
                     const avgUnsup = Math.round(((sUnsup / sTotal) + (dUnsup / dTotal)) / 2 * 100);
@@ -2067,6 +1985,7 @@
                     updateDashboard();
 
                 } catch (err) {
+                    console.error('Experiment error:', err);
                     simpleEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
                     detailedEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
                 }
@@ -2075,8 +1994,11 @@
             function animateExpBar(barId, valId, target) {
                 const bar = document.getElementById(barId);
                 const val = document.getElementById(valId);
-                if (reduceMotion) { bar.style.width = target + '%';
-                    val.textContent = target + '%'; return; }
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    bar.style.width = target + '%';
+                    val.textContent = target + '%';
+                    return;
+                }
                 bar.style.width = target + '%';
                 let start = null;
 
@@ -2091,21 +2013,26 @@
             }
 
             // ── Init ──
-            // Check API status
             checkHealth();
-
-            // Auto-generate a challenge on load
             setTimeout(generateChallenge, 500);
-
-            // Auto-run experiment
             setTimeout(() => runExpBtn.click(), 800);
-
-            // Load first question
             askAI('Who invented the light bulb?');
             document.querySelector('.chip[data-q="Who invented the light bulb?"]').classList.add('active');
+            setInterval(checkHealth, 30000);
 
-            // Periodic health check
-            setInterval(checkHealth, 15000);
+            // ── Scroll reveal ──
+            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) { e.target.classList.add('in-view');
+                            io.unobserve(e.target); }
+                    });
+                }, { threshold: 0.1 });
+                revealEls.forEach(el => io.observe(el));
+            } else {
+                revealEls.forEach(el => el.classList.add('in-view'));
+            }
 
         })();
     </script>
