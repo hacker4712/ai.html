@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { OpenAI } = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,28 +14,75 @@ app.use(express.json());
 // Serve static files from public folder
 app.use(express.static('public'));
 
-// ─── YOUR API KEY IS HERE ───
-// For Render: Set this in Environment Variables
-// For testing: You can hardcode it here (but don't commit to GitHub!)
-const API_KEY = process.env.OPENAI_API_KEY || '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';
+// ─── YOUR API KEY ───
+// Get from: https://aistudio.google.com/apikey
+// Free tier: 60 requests/min, 1,500 requests/day
+const API_KEY = process.env.GOOGLE_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
 
-if (!API_KEY) {
-    console.error('❌ OPENAI_API_KEY is missing!');
+if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    console.error('❌ GOOGLE_API_KEY is missing! Get one from https://aistudio.google.com/apikey');
 } else {
-    console.log('✅ OPENAI_API_KEY is set');
+    console.log('✅ GOOGLE_API_KEY is set');
 }
 
-const openai = new OpenAI({ 
-    apiKey: API_KEY 
-});
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// ─── HELPER: Generate content with Gemini ───
+async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500) {
+    try {
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                temperature: temperature,
+                maxOutputTokens: maxTokens,
+            }
+        });
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error('Gemini API Error:', error);
+        throw error;
+    }
+}
+
+// ─── HELPER: Generate JSON from Gemini ───
+async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
+    try {
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                temperature: temperature,
+                maxOutputTokens: maxTokens,
+            }
+        });
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        // Extract JSON from the response (in case it's wrapped in markdown)
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(text);
+    } catch (error) {
+        console.error('Gemini JSON Error:', error);
+        throw error;
+    }
+}
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
-        message: 'Server is running',
+        message: 'Server is running with Gemini API',
         timestamp: new Date().toISOString(),
-        apiKeySet: !!API_KEY
+        apiKeySet: !!(API_KEY && API_KEY !== 'YOUR_GEMINI_API_KEY_HERE'),
+        provider: 'Google Gemini'
     });
 });
 
@@ -47,8 +94,8 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'OpenAI API key is not configured' });
+    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
@@ -57,16 +104,9 @@ app.post('/api/ask', async (req, res) => {
     }
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: question }
-            ],
-            model: 'gpt-3.5-turbo',
-            temperature: 0.7,
-            max_tokens: 500,
-        });
-        res.json({ answer: completion.choices[0].message.content });
+        const fullPrompt = `${systemPrompt}\n\nQuestion: ${question}`;
+        const answer = await generateGeminiResponse(fullPrompt, 0.7, 500);
+        res.json({ answer });
     } catch (error) {
         console.error('Error in /api/ask:', error);
         res.status(500).json({ error: error.message || 'Failed to get answer' });
@@ -81,8 +121,8 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'OpenAI API key is not configured' });
+    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
@@ -93,14 +133,7 @@ app.post('/api/analyze', async (req, res) => {
     Answer: "${answer}"`;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'gpt-3.5-turbo',
-            temperature: 0.3,
-            max_tokens: 800,
-            response_format: { type: 'json_object' }
-        });
-        const result = JSON.parse(completion.choices[0].message.content);
+        const result = await generateGeminiJSON(prompt, 0.3, 800);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/analyze:', error);
@@ -110,8 +143,8 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'OpenAI API key is not configured' });
+    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
@@ -119,14 +152,7 @@ app.post('/api/challenge', async (req, res) => {
     Return strictly as JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'gpt-3.5-turbo',
-            temperature: 0.8,
-            max_tokens: 600,
-            response_format: { type: 'json_object' }
-        });
-        const result = JSON.parse(completion.choices[0].message.content);
+        const result = await generateGeminiJSON(prompt, 0.8, 600);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/challenge:', error);
@@ -143,5 +169,6 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
+    console.log(`✅ API Provider: Google Gemini`);
+    console.log(`✅ API Key: ${(API_KEY && API_KEY !== 'YOUR_GEMINI_API_KEY_HERE') ? '✓ Set' : '✗ Missing'}`);
 });
