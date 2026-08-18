@@ -43,11 +43,13 @@ if (!fs.existsSync(indexPath)) {
 app.use(express.static(publicPath));
 
 // ─── YOUR NVIDIA NIM API KEY ───
+// REPLACE THIS WITH YOUR ACTUAL KEY
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
 if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
     console.error('❌ Invalid NVIDIA NIM API key! Keys must start with "nvapi-..."');
+    console.error('   Get a valid key from: https://build.nvidia.com');
 } else {
     console.log('✅ NVIDIA NIM API Key is configured');
 }
@@ -74,7 +76,7 @@ const RATE_LIMIT = {
     processing: false
 };
 
-// ─── CACHE WITH FALLBACKS ───
+// ─── CACHE ───
 const cache = new Map();
 const CACHE_TTL = 3600000; // 1 hour
 
@@ -86,7 +88,16 @@ const FALLBACKS = {
         correct_answer: "Canberra",
         explanation: "Canberra was chosen as the capital in 1908 as a compromise between Sydney and Melbourne."
     },
-    ask: "I'm currently rate limited. Please try again in a moment. For now, here's a fun fact: The capital of Australia is Canberra."
+    ask: "I'm currently rate limited. Please try again in a moment. For now, here's a fun fact: The capital of Australia is Canberra.",
+    analyze: {
+        claims: [
+            { 
+                text: "Analysis temporarily unavailable due to rate limits.", 
+                status: "context", 
+                explain: "Please try again in a moment." 
+            }
+        ]
+    }
 };
 
 // ─── RETRY HELPER ───
@@ -198,11 +209,7 @@ async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useA
         return result;
     } catch (error) {
         console.error('Error after retries:', error);
-        // Return fallback for simple asks
-        if (prompt.includes('concise')) {
-            return FALLBACKS.ask;
-        }
-        throw error;
+        return FALLBACKS.ask;
     }
 }
 
@@ -257,21 +264,11 @@ async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
         return result;
     } catch (error) {
         console.error('Error after retries:', error);
-        // Return fallback for challenge
         if (prompt.includes('misconception') || prompt.includes('myth')) {
             return FALLBACKS.challenge;
         }
-        // Return fallback for analysis
         if (prompt.includes('Analyze')) {
-            return { 
-                claims: [
-                    { 
-                        text: "This claim couldn't be analyzed due to rate limits.", 
-                        status: "context", 
-                        explain: "Please try again in a moment." 
-                    }
-                ] 
-            };
+            return FALLBACKS.analyze;
         }
         throw error;
     }
@@ -372,13 +369,7 @@ app.post('/api/analyze', async (req, res) => {
         res.status(429).json({ 
             error: error.message || 'Rate limit exceeded. Please try again.',
             retryAfter: retryAfter,
-            claims: [
-                { 
-                    text: "Analysis temporarily unavailable due to rate limits.", 
-                    status: "context", 
-                    explain: `Please try again in ${retryAfter} seconds.` 
-                }
-            ]
+            fallback: FALLBACKS.analyze
         });
     }
 });
@@ -402,10 +393,7 @@ app.post('/api/challenge', async (req, res) => {
         res.status(429).json({ 
             error: error.message || 'Rate limit exceeded. Please try again.',
             retryAfter: retryAfter,
-            question: "What's the capital of Australia?",
-            ai_answer: "The capital of Australia is Sydney.",
-            correct_answer: "Canberra",
-            explanation: "Canberra was chosen as the capital in 1908 as a compromise between Sydney and Melbourne."
+            ...FALLBACKS.challenge
         });
     }
 });
@@ -425,6 +413,6 @@ app.listen(PORT, () => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
     console.log(`🛡️ Rate Limit: ${RATE_LIMIT.requestsPerMinute} requests/minute`);
-    console.log(`📦 Cache: Enabled`);
+    console.log(`📦 Cache: Enabled (${CACHE_TTL/1000}s TTL)`);
     console.log(`🔄 Fallbacks: Enabled for rate limits`);
 });
