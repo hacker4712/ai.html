@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Confidently Wrong · AI Fact-Check Lab</title>
+    <title>Confidently Wrong · AI Hallucination Lab</title>
     <meta name="description" content="Class 12 science exhibition — fact-check AI claims with sources." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        /* ── Same base styles as before ── */
+        /* ── reset & base ── */
         *,
         *::before,
         *::after {
@@ -1685,98 +1685,9 @@
 
     <script>
         (function() {
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            // ── particles ──
-            const p = document.getElementById('particles');
-            for (let i = 0; i < 28; i++) {
-                const s = document.createElement('span');
-                const size = 2 + Math.random() * 7;
-                s.style.width = size + 'px';
-                s.style.height = size + 'px';
-                s.style.left = Math.random() * 100 + '%';
-                s.style.animationDuration = 16 + Math.random() * 28 + 's';
-                s.style.animationDelay = Math.random() * 22 + 's';
-                s.style.opacity = 0.06 + Math.random() * 0.14;
-                p.appendChild(s);
-            }
-
-            // ── scroll reveal ──
-            const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
-            if ('IntersectionObserver' in window && !reduceMotion) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => {
-                        if (e.isIntersecting) { e.target.classList.add('in-view');
-                            io.unobserve(e.target); }
-                    });
-                }, { threshold: 0.12 });
-                revealEls.forEach(el => io.observe(el));
-            } else {
-                revealEls.forEach(el => el.classList.add('in-view'));
-            }
-
-            // ── hero terminal ──
-            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
-            const heroEl = document.getElementById('hero-answer');
-            const heroFlag = document.getElementById('hero-flag');
-            const heroFill = document.getElementById('hero-fill');
-            const heroPct = document.getElementById('hero-pct');
-
-            function typeText(el, text, speed, done) {
-                if (reduceMotion) { el.textContent = text; if (done) done(); return; }
-                let i = 0;
-                el.innerHTML = '';
-                const cursor = document.createElement('span');
-                cursor.className = 'typecursor';
-                cursor.textContent = '\u00A0';
-
-                function step() {
-                    if (i <= text.length) {
-                        el.textContent = text.slice(0, i);
-                        el.appendChild(cursor);
-                        i++;
-                        setTimeout(step, speed);
-                    } else {
-                        cursor.remove();
-                        if (done) done();
-                    }
-                }
-                step();
-            }
-
-            function animateFill(el, pctEl, target, duration) {
-                if (reduceMotion) { el.style.width = target + '%';
-                    pctEl.textContent = target + '%'; return; }
-                el.style.width = target + '%';
-                let start = null;
-
-                function step(ts) {
-                    if (!start) start = ts;
-                    const p = Math.min(1, (ts - start) / duration);
-                    pctEl.textContent = Math.round(p * target) + '%';
-                    if (p < 1) requestAnimationFrame(step);
-                }
-                requestAnimationFrame(step);
-            }
-
-            function runHero() {
-                typeText(heroEl, heroAnswer, 20, () => {
-                    animateFill(heroFill, heroPct, 96, 1100);
-                    setTimeout(() => heroFlag.classList.add('show'), 400);
-                });
-            }
-            if ('IntersectionObserver' in window) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => { if (e.isIntersecting) { runHero();
-                            io.disconnect(); } });
-                }, { threshold: 0.3 });
-                io.observe(document.getElementById('hero-terminal'));
-            } else { runHero(); }
-
             // ── API CONFIGURATION ──
-            const API_BASE = window.location.hostname === 'localhost' ?
-                'http://localhost:3001' :
-                '';
+            // USE THE SAME DOMAIN (no need for localhost on Render)
+            const API_BASE = '';
 
             console.log('🚀 API_BASE:', API_BASE || '(same domain)');
             console.log('🌐 Hostname:', window.location.hostname);
@@ -1856,8 +1767,15 @@
                     });
 
                     if (!res.ok) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error || `HTTP ${res.status}`);
+                        const errorData = await res.text();
+                        let errorMsg;
+                        try {
+                            const parsed = JSON.parse(errorData);
+                            errorMsg = parsed.error || `HTTP ${res.status}`;
+                        } catch {
+                            errorMsg = `HTTP ${res.status}: ${errorData}`;
+                        }
+                        throw new Error(errorMsg);
                     }
 
                     return await res.json();
@@ -1874,8 +1792,15 @@
                 try {
                     const res = await fetch(url);
                     if (!res.ok) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error || `HTTP ${res.status}`);
+                        const errorData = await res.text();
+                        let errorMsg;
+                        try {
+                            const parsed = JSON.parse(errorData);
+                            errorMsg = parsed.error || `HTTP ${res.status}`;
+                        } catch {
+                            errorMsg = `HTTP ${res.status}: ${errorData}`;
+                        }
+                        throw new Error(errorMsg);
                     }
                     return await res.json();
                 } catch (err) {
@@ -1898,13 +1823,14 @@
                         return false;
                     }
                 } catch (error) {
+                    console.error('Health check error:', error);
                     apiStatus.textContent = '🔴 Offline';
                     apiStatus.className = 'status-badge offline';
                     return false;
                 }
             }
 
-            // ── Generate mock sources with links ──
+            // ── Generate sources ──
             function generateSources(claimText, claimStatus) {
                 const sourceDB = {
                     'Edison invented the light bulb': [
@@ -1933,7 +1859,6 @@
                     ]
                 };
 
-                // Default sources for fact-check mode
                 const defaultSources = [
                     { title: 'Wikipedia - Common Misconceptions', url: 'https://en.wikipedia.org/wiki/List_of_common_misconceptions' },
                     { title: 'Snopes - Fact Check Archive', url: 'https://www.snopes.com/fact-check/' }
@@ -1946,7 +1871,6 @@
                     }
                 }
 
-                // Fact-check specific sources
                 if (claimText.includes('10% of their brain')) {
                     return [
                         { title: 'Scientific American - The 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' },
@@ -1984,7 +1908,7 @@
                 ] : defaultSources;
             }
 
-            // ── Lab: Ask AI or Fact-Check ──
+            // ── Lab: Ask AI ──
             async function askAI(input) {
                 if (!input) return;
                 currentQuestion = input;
@@ -1997,17 +1921,14 @@
 
                 try {
                     if (currentMode === 'factcheck') {
-                        // Fact-check mode: send claim to analyze endpoint
                         const data = await callApi('/api/analyze', { question: input, answer: input });
                         currentAnswer = input;
                         labA.textContent = input;
 
-                        // Display fact-check result
                         factcheckResult.style.display = 'block';
                         const claims = data.claims || [];
                         let html = '';
 
-                        // Find the claim status
                         let overallStatus = 'partial';
                         let unsupportedCount = 0;
                         claims.forEach(c => {
@@ -2035,7 +1956,6 @@
                             html += `<span class="claim-verdict ${verdict}">${verdictLabel}</span>`;
                             html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem;">${c.explain}</div>`;
 
-                            // Show sources for supported claims
                             if (c.status === 'supported') {
                                 const sources = generateSources(c.text, 'supported');
                                 html += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">`;
@@ -2049,7 +1969,6 @@
                         });
                         html += `</div>`;
 
-                        // Overall sources
                         const allSources = generateSources(input, 'supported');
                         if (allSources.length > 0) {
                             html += `<div style="margin-top:0.8rem;padding-top:0.5rem;border-top:1px solid var(--border);">`;
@@ -2064,7 +1983,6 @@
                         html += `</div>`;
                         factcheckContent.innerHTML = html;
 
-                        // Score update
                         if (unsupportedCount > 0) {
                             const total = claims.length;
                             const correct = total - unsupportedCount;
@@ -2082,7 +2000,6 @@
                         xrayBtn.disabled = true;
                         labConf.style.display = 'none';
                     } else {
-                        // Ask mode
                         const data = await callApi('/api/ask', { question: input, mode: 'simple' });
                         currentAnswer = data.answer;
                         labA.textContent = data.answer;
@@ -2096,6 +2013,7 @@
                     labA.innerHTML = `
                         <span class="error-msg">⚠️ Error: ${err.message}</span>
                     `;
+                    console.error('Ask AI error:', err);
                 }
             }
 
@@ -2133,7 +2051,6 @@
                         header.appendChild(t);
                         d.appendChild(header);
 
-                        // Add sources for supported claims
                         if (c.status === 'supported') {
                             const sources = generateSources(c.text, 'supported');
                             if (sources.length > 0) {
@@ -2182,7 +2099,7 @@
                 this.disabled = true;
             });
 
-            // ── Lab: Preset chips ──
+            // ── Preset chips ──
             document.querySelectorAll('#preset-chips .chip').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -2221,7 +2138,7 @@
                 });
             });
 
-            // ── Lab: Custom question ──
+            // ── Custom question ──
             askBtn.addEventListener('click', () => {
                 const q = customInput.value.trim();
                 if (q) { askAI(q);
@@ -2370,7 +2287,6 @@
                     simpleEl.textContent = simpleRes.answer;
                     detailedEl.textContent = detailedRes.answer;
 
-                    // Analyze both
                     const [simpleAnalysis, detailedAnalysis] = await Promise.all([
                         callApi('/api/analyze', { question, answer: simpleRes.answer }),
                         callApi('/api/analyze', { question, answer: detailedRes.answer })
@@ -2442,7 +2358,7 @@
             document.querySelector('#preset-chips .chip[data-q="Who invented the light bulb?"]').classList.add('active');
 
             // Periodic health check
-            setInterval(checkHealth, 15000);
+            setInterval(checkHealth, 30000);
 
         })();
     </script>
