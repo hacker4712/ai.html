@@ -9,8 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        /* ── All your existing styles stay the same ── */
-        /* (I'm keeping the styles identical to yours for consistency) */
+        /* ── reset & base ── */
         *,
         *::before,
         *::after {
@@ -105,7 +104,8 @@
         .reveal {
             opacity: 0;
             transform: translateY(28px);
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .reveal.in-view {
             opacity: 1;
@@ -250,7 +250,8 @@
         .hero {
             padding: 5rem 0 4.5rem;
             background: radial-gradient(ellipse at 70% 20%, rgba(255, 59, 92, 0.05), transparent 60%),
-                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%), var(--bg);
+                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%),
+                var(--bg);
             position: relative;
             overflow: hidden;
         }
@@ -1306,15 +1307,6 @@
             color: var(--text-muted);
             margin-right: 0.3rem;
         }
-        .rate-limit-notice {
-            background: rgba(255, 198, 43, 0.1);
-            border: 1px solid var(--gold);
-            border-radius: var(--radius-sm);
-            padding: 0.5rem 0.8rem;
-            margin-top: 0.5rem;
-            color: var(--gold);
-            font-size: 0.8rem;
-        }
     </style>
 </head>
 <body>
@@ -1665,11 +1657,10 @@
                 io.observe(document.getElementById('hero-terminal'));
             } else { runHero(); }
 
-            // ════════════════════════════════════════════════════════════
-            // 🔧 FIXED API CONFIGURATION
-            // ════════════════════════════════════════════════════════════
-            // Use empty string for same domain (works on Render)
-            const API_BASE = '';
+            // ── API CONFIGURATION ──
+            const API_BASE = window.location.hostname === 'localhost' ?
+                'http://localhost:3001' :
+                '';
 
             console.log('🚀 API_BASE:', API_BASE || '(same domain)');
             console.log('🌐 Hostname:', window.location.hostname);
@@ -1698,7 +1689,7 @@
                 dashC = 0,
                 dashU = 0;
 
-            // ── API helper with better error handling ──
+            // ── API helper ──
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
                 console.log(`📡 Calling API: ${url}`);
@@ -1710,29 +1701,8 @@
                         body: JSON.stringify(data || {})
                     });
 
-                    // Handle 429 rate limit specially
-                    if (res.status === 429) {
-                        let errorData;
-                        try {
-                            errorData = await res.json();
-                        } catch (e) {
-                            errorData = { error: 'Rate limit exceeded. Please wait a moment.' };
-                        }
-                        // If there's a fallback, use it
-                        if (errorData.fallback) {
-                            return { answer: errorData.fallback, _rateLimited: true };
-                        }
-                        if (errorData.claims) {
-                            return { claims: errorData.claims, _rateLimited: true };
-                        }
-                        if (errorData.question) {
-                            return errorData;
-                        }
-                        throw new Error(errorData.error || 'Rate limit exceeded. Please wait.');
-                    }
-
                     if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
+                        const errorData = await res.json();
                         throw new Error(errorData.error || `HTTP ${res.status}`);
                     }
 
@@ -1750,7 +1720,7 @@
                 try {
                     const res = await fetch(url);
                     if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
+                        const errorData = await res.json();
                         throw new Error(errorData.error || `HTTP ${res.status}`);
                     }
                     return await res.json();
@@ -1774,31 +1744,10 @@
                         return false;
                     }
                 } catch (error) {
-                    console.error('Health check error:', error);
                     apiStatus.textContent = '🔴 Offline';
                     apiStatus.className = 'status-badge offline';
                     return false;
                 }
-            }
-
-            // ── Sample sources for claims ──
-            function getSourcesForClaim(claimText) {
-                const sources = {
-                    'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
-                    'in 1879': ['US Patent 223,898 (1880)'],
-                    'Sharks have 206 bones': ['NOAA Fisheries'],
-                    'Einstein failed mathematics': ['Albert Einstein Archives'],
-                    'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
-                    'The capital of Australia is Sydney': ['Australian Government Geoscience']
-                };
-
-                for (const [key, value] of Object.entries(sources)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase()) ||
-                        key.toLowerCase().includes(claimText.toLowerCase())) {
-                        return value;
-                    }
-                }
-                return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
             }
 
             // ── Lab: Ask AI ──
@@ -1813,18 +1762,6 @@
 
                 try {
                     const data = await callApi('/api/ask', { question, mode: 'simple' });
-                    
-                    // Handle rate-limited response with fallback
-                    if (data._rateLimited) {
-                        labA.innerHTML = `
-                            ${data.answer}
-                            <div class="rate-limit-notice">⚠️ Rate limit reached. Using fallback response.</div>
-                        `;
-                        labConf.style.display = 'none';
-                        xrayBtn.disabled = true;
-                        return;
-                    }
-                    
                     currentAnswer = data.answer;
                     labA.textContent = data.answer;
                     labConf.style.display = 'block';
@@ -1838,6 +1775,28 @@
                 }
             }
 
+            // ── Sample sources for claims (simulated) ──
+            function getSourcesForClaim(claimText) {
+                // In a real implementation, these would come from the API
+                const sources = {
+                    'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
+                    'in 1879': ['US Patent 223,898 (1880)'],
+                    'Sharks have 206 bones': ['NOAA Fisheries'],
+                    'Einstein failed mathematics': ['Albert Einstein Archives'],
+                    'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
+                    'The capital of Australia is Sydney': ['Australian Government Geoscience']
+                };
+                
+                for (const [key, value] of Object.entries(sources)) {
+                    if (claimText.toLowerCase().includes(key.toLowerCase()) || 
+                        key.toLowerCase().includes(claimText.toLowerCase())) {
+                        return value;
+                    }
+                }
+                // Default sources if none match
+                return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
+            }
+
             // ── Lab: X-Ray ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
@@ -1847,22 +1806,6 @@
 
                 try {
                     const data = await callApi('/api/analyze', { question: currentQuestion, answer: currentAnswer });
-                    
-                    // Handle rate-limited response
-                    if (data._rateLimited) {
-                        labClaims.innerHTML = `
-                            <div class="xray-claim">
-                                <div class="claim-header">
-                                    <span class="badge context">⚠️</span>
-                                    <div class="text">Rate limit reached. Using fallback analysis.</div>
-                                </div>
-                            </div>
-                        `;
-                        labCorrection.textContent = 'Analysis temporarily unavailable due to rate limits.';
-                        this.disabled = true;
-                        return;
-                    }
-                    
                     const claims = data.claims || [];
                     labClaims.innerHTML = '';
                     let unsupportedCount = 0;
@@ -1870,24 +1813,24 @@
                     claims.forEach(c => {
                         const d = document.createElement('div');
                         d.className = 'xray-claim';
-
+                        
                         const header = document.createElement('div');
                         header.className = 'claim-header';
-
+                        
                         const b = document.createElement('span');
                         b.className = 'badge ' + c.status;
-                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
-                            unsupported: '❌ UNSUPPORTED' };
+                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT', unsupported: '❌ UNSUPPORTED' };
                         b.textContent = labels[c.status] || c.status;
-
+                        
                         const t = document.createElement('div');
                         t.className = 'text';
                         t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
-
+                        
                         header.appendChild(b);
                         header.appendChild(t);
                         d.appendChild(header);
-
+                        
+                        // Add sources for supported claims
                         if (c.status === 'supported') {
                             const sourcesDiv = document.createElement('div');
                             sourcesDiv.className = 'sources';
@@ -1895,7 +1838,7 @@
                             label.className = 'sources-label';
                             label.textContent = '📚 Sources:';
                             sourcesDiv.appendChild(label);
-
+                            
                             const sourceList = getSourcesForClaim(c.text);
                             sourceList.forEach(src => {
                                 const tag = document.createElement('span');
@@ -1905,7 +1848,7 @@
                             });
                             d.appendChild(sourcesDiv);
                         }
-
+                        
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -1977,24 +1920,9 @@
 
                 try {
                     const data = await callApi('/api/challenge', {});
-                    
-                    // Check if it's a rate-limited fallback
-                    if (data._rateLimited) {
-                        renderChallenge(data);
-                        showMessage('⚠️ Rate limit reached. Using fallback challenge.', 'error');
-                        return;
-                    }
-                    
                     renderChallenge(data);
                     showMessage('✅ Challenge generated successfully!', 'success');
                 } catch (err) {
-                    // Check if we have a fallback in the error
-                    if (err.fallback) {
-                        renderChallenge(err);
-                        showMessage('⚠️ Rate limit reached. Using fallback challenge.', 'error');
-                        return;
-                    }
-                    
                     challengeGrid.innerHTML = `
                         <div class="challenge-card">
                             <div style="text-align:center;padding:1rem;color:var(--accent);">
@@ -2009,18 +1937,16 @@
             function renderChallenge(data) {
                 const card = document.createElement('div');
                 card.className = 'challenge-card';
-                const isCorrectTrue = data.correct_answer && (
-                    data.correct_answer.toLowerCase().includes('true') ||
+                const isCorrectTrue = data.correct_answer.toLowerCase().includes('true') ||
                     data.correct_answer.toLowerCase().includes('yes') ||
-                    data.correct_answer.toLowerCase().includes('correct')
-                );
+                    data.correct_answer.toLowerCase().includes('correct');
 
                 card.innerHTML = `
                     <span class="status pending">❓ CHALLENGE</span>
-                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question || 'No question available'}</p>
+                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question}</p>
                     <div style="background:rgba(255,59,92,0.06);padding:0.6rem 0.8rem;border-radius:var(--radius-sm);border-left:3px solid var(--accent);margin-bottom:0.8rem;">
                         <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent);font-weight:700;">🤖 AI Says:</span>
-                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer || 'No answer available'}</p>
+                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer}</p>
                     </div>
                     <div class="options">
                         <button data-choice="true">✅ True</button>
@@ -2029,9 +1955,9 @@
                     <div class="result-text" style="display:none;"></div>
                     <div class="reveal-answer">
                         <div class="label">✅ Correct Answer:</div>
-                        <p>${data.correct_answer || 'No correct answer available'}</p>
+                        <p>${data.correct_answer}</p>
                         <div class="label" style="color:var(--gold);margin-top:0.5rem;">📖 Explanation:</div>
-                        <p>${data.explanation || 'No explanation available'}</p>
+                        <p>${data.explanation}</p>
                     </div>
                 `;
                 challengeGrid.innerHTML = '';
@@ -2104,51 +2030,41 @@
                         callApi('/api/ask', { question, mode: 'detailed' })
                     ]);
 
-                    const simpleAnswer = simpleRes._rateLimited ? simpleRes.answer : simpleRes.answer;
-                    const detailedAnswer = detailedRes._rateLimited ? detailedRes.answer : detailedRes.answer;
+                    simpleEl.textContent = simpleRes.answer;
+                    detailedEl.textContent = detailedRes.answer;
 
-                    simpleEl.textContent = simpleAnswer;
-                    detailedEl.textContent = detailedAnswer;
+                    // Analyze both
+                    const [simpleAnalysis, detailedAnalysis] = await Promise.all([
+                        callApi('/api/analyze', { question, answer: simpleRes.answer }),
+                        callApi('/api/analyze', { question, answer: detailedRes.answer })
+                    ]);
 
-                    // Analyze both if not rate limited
-                    if (!simpleRes._rateLimited && !detailedRes._rateLimited) {
-                        const [simpleAnalysis, detailedAnalysis] = await Promise.all([
-                            callApi('/api/analyze', { question, answer: simpleAnswer }),
-                            callApi('/api/analyze', { question, answer: detailedAnswer })
-                        ]);
+                    const countStatus = (claims, status) => claims.filter(c => c.status === status).length;
+                    const simpleClaims = simpleAnalysis.claims || [];
+                    const detailedClaims = detailedAnalysis.claims || [];
 
-                        const countStatus = (claims, status) => claims.filter(c => c.status === status).length;
-                        const simpleClaims = simpleAnalysis.claims || [];
-                        const detailedClaims = detailedAnalysis.claims || [];
+                    const sSup = countStatus(simpleClaims, 'supported');
+                    const sCtx = countStatus(simpleClaims, 'context');
+                    const sUnsup = countStatus(simpleClaims, 'unsupported');
+                    const sTotal = simpleClaims.length || 1;
 
-                        const sSup = countStatus(simpleClaims, 'supported');
-                        const sCtx = countStatus(simpleClaims, 'context');
-                        const sUnsup = countStatus(simpleClaims, 'unsupported');
-                        const sTotal = simpleClaims.length || 1;
+                    const dSup = countStatus(detailedClaims, 'supported');
+                    const dCtx = countStatus(detailedClaims, 'context');
+                    const dUnsup = countStatus(detailedClaims, 'unsupported');
+                    const dTotal = detailedClaims.length || 1;
 
-                        const dSup = countStatus(detailedClaims, 'supported');
-                        const dCtx = countStatus(detailedClaims, 'context');
-                        const dUnsup = countStatus(detailedClaims, 'unsupported');
-                        const dTotal = detailedClaims.length || 1;
+                    const avgSup = Math.round(((sSup / sTotal) + (dSup / dTotal)) / 2 * 100);
+                    const avgCtx = Math.round(((sCtx / sTotal) + (dCtx / dTotal)) / 2 * 100);
+                    const avgUnsup = Math.round(((sUnsup / sTotal) + (dUnsup / dTotal)) / 2 * 100);
 
-                        const avgSup = Math.round(((sSup / sTotal) + (dSup / dTotal)) / 2 * 100);
-                        const avgCtx = Math.round(((sCtx / sTotal) + (dCtx / dTotal)) / 2 * 100);
-                        const avgUnsup = Math.round(((sUnsup / sTotal) + (dUnsup / dTotal)) / 2 * 100);
+                    animateExpBar('exp-supported', 'exp-supported-val', avgSup);
+                    animateExpBar('exp-context', 'exp-context-val', avgCtx);
+                    animateExpBar('exp-unsupported', 'exp-unsupported-val', avgUnsup);
 
-                        animateExpBar('exp-supported', 'exp-supported-val', avgSup);
-                        animateExpBar('exp-context', 'exp-context-val', avgCtx);
-                        animateExpBar('exp-unsupported', 'exp-unsupported-val', avgUnsup);
-
-                        dashQ += 2;
-                        dashC += sTotal + dTotal;
-                        dashU += sUnsup + dUnsup;
-                        updateDashboard();
-                    } else {
-                        // Show rate limit notice on bars
-                        animateExpBar('exp-supported', 'exp-supported-val', 33);
-                        animateExpBar('exp-context', 'exp-context-val', 33);
-                        animateExpBar('exp-unsupported', 'exp-unsupported-val', 34);
-                    }
+                    dashQ += 2;
+                    dashC += sTotal + dTotal;
+                    dashU += sUnsup + dUnsup;
+                    updateDashboard();
 
                 } catch (err) {
                     simpleEl.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
