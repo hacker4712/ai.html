@@ -8,7 +8,7 @@ const { OpenAI } = require('openai');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Middleware - ORDER MATTERS!
 app.use(cors());
 app.use(express.json());
 
@@ -32,8 +32,6 @@ if (!fs.existsSync(indexPath)) {
 </html>`;
     fs.writeFileSync(indexPath, fallbackHTML);
 }
-
-app.use(express.static(publicPath));
 
 // ─── API KEY ───
 const HARDCODED_KEY = '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';
@@ -153,6 +151,10 @@ setInterval(() => {
     }
 }, 60000);
 
+// ════════════════════════════════════════════════
+//  ✅ API ROUTES - MUST COME BEFORE STATIC FILES
+// ════════════════════════════════════════════════
+
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
@@ -239,11 +241,19 @@ app.post('/api/challenge', async (req, res) => {
     }
 });
 
-// ─── SERVE INDEX ───
+// ════════════════════════════════════════════════
+//  📁 STATIC FILES - AFTER API ROUTES
+// ════════════════════════════════════════════════
+
+app.use(express.static(publicPath));
+
+// ─── CATCH-ALL FOR NON-API ROUTES ───
 app.get('*', (req, res) => {
+    // If it's an API route that wasn't matched, return 404 JSON
     if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API not found' });
+        return res.status(404).json({ error: 'API endpoint not found' });
     }
+    // Otherwise serve index.html
     res.sendFile(indexPath);
 });
 
