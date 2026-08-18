@@ -32,22 +32,35 @@ const client = new OpenAI({
     }
 });
 
-// ─── NVIDIA NIM FREE MODELS ───
-// Choose one of these:
-// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
-// 2. 'mistralai/mistral-large'       - Good quality
-// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
-const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
+// ─── MODEL SELECTION ───
+// For accuracy: Llama 3.1 70B (best quality)
+// For speed: Mistral Small 3.1 (faster, still accurate)
+// Balanced approach: Use Llama for analysis, Mistral for simple answers
 
-// ─── HELPER: Generate content ───
-async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
+const FAST_MODEL = 'mistralai/mistral-small-3.1-24b-instruct';
+const ACCURATE_MODEL = 'meta/llama-3.1-70b-instruct';
+
+// ─── HELPER: Generate response (fast for simple, accurate for complex) ───
+async function generateResponse(prompt, temperature = 0.5, maxTokens = 350, useAccurate = false) {
     try {
+        const startTime = Date.now();
+        const model = useAccurate ? ACCURATE_MODEL : FAST_MODEL;
         const completion = await client.chat.completions.create({
-            model: FREE_MODEL,
-            messages: [{ role: 'user', content: prompt }],
+            model: model,
+            messages: [
+                { 
+                    role: 'system', 
+                    content: useAccurate 
+                        ? 'You are a knowledgeable assistant. Provide accurate, well-reasoned answers with facts and context. Be thorough but concise.'
+                        : 'You are a helpful assistant. Give accurate, concise answers in 2-3 sentences.'
+                },
+                { role: 'user', content: prompt }
+            ],
             temperature: temperature,
             max_tokens: maxTokens,
         });
+        const elapsed = Date.now() - startTime;
+        console.log(`⏱️ Response generated in ${elapsed}ms (model: ${model})`);
         return completion.choices[0].message.content;
     } catch (error) {
         console.error('NVIDIA NIM API Error:', error);
@@ -55,15 +68,25 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     }
 }
 
-// ─── HELPER: Generate JSON ───
-async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
+// ─── HELPER: Generate JSON analysis (always uses accurate model) ───
+async function generateJSON(prompt, temperature = 0.2, maxTokens = 500) {
     try {
+        const startTime = Date.now();
+        // Analysis always uses accurate model for correctness
         const completion = await client.chat.completions.create({
-            model: FREE_MODEL,
-            messages: [{ role: 'user', content: prompt }],
+            model: ACCURATE_MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a fact-checking AI. Analyze claims carefully. Return valid JSON only. Be accurate and thorough.'
+                },
+                { role: 'user', content: prompt }
+            ],
             temperature: temperature,
             max_tokens: maxTokens,
         });
+        const elapsed = Date.now() - startTime;
+        console.log(`⏱️ Analysis generated in ${elapsed}ms (using accurate model)`);
         const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -81,15 +104,17 @@ app.get('/api/health', (req, res) => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     res.json({ 
         status: keyValid ? 'ok' : 'error',
-        message: keyValid ? 'Server is running with NVIDIA NIM API' : 'API key not configured',
+        message: keyValid ? 'Server is running (Balanced Mode)' : 'API key not configured',
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
         provider: 'NVIDIA NIM',
-        model: FREE_MODEL
+        fastModel: FAST_MODEL,
+        accurateModel: ACCURATE_MODEL,
+        mode: 'BALANCED (Fast + Accurate)'
     });
 });
 
-// ─── ASK AI ───
+// ─── ASK AI (Fast for simple, Accurate for detailed) ───
 app.post('/api/ask', async (req, res) => {
     const { question, mode } = req.body;
     
@@ -101,14 +126,19 @@ app.post('/api/ask', async (req, res) => {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
-    if (mode === 'detailed') {
-        systemPrompt = 'You are a helpful assistant. Provide a comprehensive, well-reasoned answer with context, evidence, and sources. If you are unsure, clearly state that you are unsure.';
-    }
-
     try {
-        const fullPrompt = `${systemPrompt}\n\nQuestion: ${question}`;
-        const answer = await generateResponse(fullPrompt, 0.7, 500);
+        let answer;
+        const isDetailed = mode === 'detailed';
+        
+        if (isDetailed) {
+            // Detailed answers use accurate model for better quality
+            const prompt = `Provide a comprehensive, well-reasoned answer to: "${question}". Include context, evidence, and sources if known. Be accurate and thorough.`;
+            answer = await generateResponse(prompt, 0.3, 500, true);
+        } else {
+            // Simple answers use fast model with accuracy prompt
+            const prompt = `Give a concise, accurate answer to: "${question}". Include the most important fact.`;
+            answer = await generateResponse(prompt, 0.3, 250, false);
+        }
         res.json({ answer });
     } catch (error) {
         console.error('Error in /api/ask:', error);
@@ -116,7 +146,7 @@ app.post('/api/ask', async (req, res) => {
     }
 });
 
-// ─── ANALYZE ANSWER ───
+// ─── ANALYZE ANSWER (Always accurate) ───
 app.post('/api/analyze', async (req, res) => {
     const { question, answer } = req.body;
 
@@ -128,15 +158,16 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
-    Break it down into individual claims. For each claim, classify it as "supported" (factually correct), "context" (needs more context or is partially true), or "unsupported" (hallucination / false).
+    const prompt = `Analyze this claim: "${answer}" in the context of the question: "${question}".
+    Break it down into individual claims. For each claim, classify as:
+    - "supported" (factually correct)
+    - "context" (partially true, needs context)
+    - "unsupported" (hallucination / false)
     Provide a brief explanation for each classification.
-    Return the result strictly as a JSON object with a "claims" array.
-    Example: { "claims": [ { "text": "The sky is blue.", "status": "supported", "explain": "This is true due to Rayleigh scattering." } ] }
-    Answer: "${answer}"`;
+    Return JSON: { "claims": [ { "text": "...", "status": "...", "explain": "..." } ] }`;
 
     try {
-        const result = await generateJSON(prompt, 0.3, 800);
+        const result = await generateJSON(prompt, 0.2, 500);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/analyze:', error);
@@ -144,18 +175,18 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE ───
+// ─── GENERATE CHALLENGE (Accurate) ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
-    The AI has provided a confident but incorrect answer. Provide the question, the AI's wrong answer, the correct answer, and an explanation.
-    Return strictly as JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
+    const prompt = `Generate a tricky misconception or common myth question.
+    The AI should give a confident but INCORRECT answer.
+    Return JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
 
     try {
-        const result = await generateJSON(prompt, 0.8, 600);
+        const result = await generateJSON(prompt, 0.4, 400);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/challenge:', error);
@@ -172,8 +203,10 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Provider: NVIDIA NIM`);
-    console.log(`✅ Model: ${FREE_MODEL}`);
+    console.log(`✅ API Provider: NVIDIA NIM (BALANCED MODE)`);
+    console.log(`✅ Fast Model (simple answers): ${FAST_MODEL}`);
+    console.log(`✅ Accurate Model (analysis): ${ACCURATE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
-    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
+    console.log(`📊 Mode: Fast responses + Accurate analysis`);
 });
