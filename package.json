@@ -1,7 +1,7 @@
 {
   "name": "ai-exhibition",
   "version": "1.0.0",
-  "description": "AI Hallucination Exhibition Project with OpenRouter",
+  "description": "AI Hallucination Exhibition Project with NVIDIA NIM",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
