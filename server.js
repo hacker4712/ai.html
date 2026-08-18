@@ -12,15 +12,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ─── YOUR GEMINI API KEY ───
-// Get your key from: https://aistudio.google.com/apikey
-// NOTE: Gemini keys start with "AIzaSy..." 
-// The key you provided "AQ.Ab8RN6..." may not be valid
-const API_KEY = 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM'; // ← REPLACE WITH YOUR ACTUAL KEY
+// ─── YOUR API KEY ───
+// Key from: https://aistudio.google.com/apikey
+const HARDCODED_KEY = 'AQ.Ab8RN6K0OwsfSP1RAB4Oabv9wJhOhltaY4GJLiTYijjcdahGVg';
 
-if (!API_KEY || API_KEY === 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM') {
-    console.error('❌ Please replace API_KEY with your actual Gemini key!');
-    console.error('   Get one from: https://aistudio.google.com/apikey');
+// Try environment variable first, fallback to hardcoded
+const API_KEY = process.env.GOOGLE_API_KEY || HARDCODED_KEY;
+
+if (!API_KEY) {
+    console.error('❌ API Key is missing!');
 } else {
     console.log('✅ API Key is configured');
 }
@@ -77,12 +77,11 @@ async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
-    const keyValid = API_KEY && API_KEY !== 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM';
     res.json({ 
-        status: keyValid ? 'ok' : 'error',
-        message: keyValid ? 'Server is running with Gemini API' : 'API key not configured',
+        status: 'ok', 
+        message: 'Server is running with Gemini API',
         timestamp: new Date().toISOString(),
-        apiKeySet: keyValid,
+        apiKeySet: !!API_KEY,
         provider: 'Google Gemini'
     });
 });
@@ -95,9 +94,8 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    const keyValid = API_KEY && API_KEY !== 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM';
-    if (!keyValid) {
-        return res.status(500).json({ error: 'Google API key is not configured. Please set your key in server.js' });
+    if (!API_KEY) {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
@@ -123,9 +121,8 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    const keyValid = API_KEY && API_KEY !== 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM';
-    if (!keyValid) {
-        return res.status(500).json({ error: 'Google API key is not configured. Please set your key in server.js' });
+    if (!API_KEY) {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
@@ -146,9 +143,8 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    const keyValid = API_KEY && API_KEY !== 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM';
-    if (!keyValid) {
-        return res.status(500).json({ error: 'Google API key is not configured. Please set your key in server.js' });
+    if (!API_KEY) {
+        return res.status(500).json({ error: 'Google API key is not configured' });
     }
 
     const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
@@ -174,6 +170,5 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
     console.log(`✅ API Provider: Google Gemini`);
-    const keyValid = API_KEY && API_KEY !== 'AIzaSyC5LpGsGVMYlGQhLtrxJ5NpWB-TIWaVMPM';
-    console.log(`✅ API Key: ${keyValid ? '✓ Set' : '✗ Missing - Please replace with your actual key'}`);
+    console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
 });
