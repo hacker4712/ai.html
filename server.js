@@ -18,19 +18,44 @@ const indexPath = path.join(publicPath, 'index.html');
 
 console.log(`📁 Public folder: ${publicPath}`);
 
+// CREATE PUBLIC FOLDER IF MISSING
 if (!fs.existsSync(publicPath)) {
+    console.log('📝 Creating public folder...');
     fs.mkdirSync(publicPath, { recursive: true });
 }
 
+// CREATE INDEX.HTML IF MISSING
 if (!fs.existsSync(indexPath)) {
+    console.log('📝 Creating index.html...');
     const fallbackHTML = `<!DOCTYPE html>
 <html>
-<head><title>AI Lab</title></head>
-<body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
-    <div style="text-align:center;"><h1>🧠 AI Lab</h1><p>Server running ✅</p></div>
+<head>
+    <title>AI Hallucination Lab</title>
+    <style>
+        body { background: #0b0b14; color: #f0edf6; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; padding: 2rem; background: #13131f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); }
+        h1 { color: #ff3b5c; }
+        .status { color: #2ecc71; font-weight: bold; }
+        .error { color: #ff3b5c; }
+        .btn { display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #ff3b5c; color: white; border-radius: 8px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 AI Hallucination Lab</h1>
+        <p>Server is running ✅</p>
+        <p class="status">🟢 Online</p>
+        <p style="color: #6f6b87; font-size: 0.8rem; margin-top: 1rem;">
+            Waiting for index.html to be uploaded to the public folder.
+        </p>
+        <a href="https://github.com" class="btn">Upload Your Website</a>
+    </div>
 </body>
 </html>`;
     fs.writeFileSync(indexPath, fallbackHTML);
+    console.log('✅ Created fallback index.html');
+} else {
+    console.log('✅ index.html found');
 }
 
 // ─── API KEY ───
@@ -245,6 +270,7 @@ app.post('/api/challenge', async (req, res) => {
 //  📁 STATIC FILES - AFTER API ROUTES
 // ════════════════════════════════════════════════
 
+// Serve static files from public folder
 app.use(express.static(publicPath));
 
 // ─── CATCH-ALL FOR NON-API ROUTES ───
@@ -253,14 +279,36 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
     }
-    // Otherwise serve index.html
-    res.sendFile(indexPath);
+    
+    // Check if index.html exists
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        // Ultimate fallback
+        res.status(200).send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>AI Hallucination Lab</title></head>
+            <body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;">
+                <div style="text-align:center;padding:2rem;background:#13131f;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
+                    <h1 style="color:#ff3b5c;">🧠 AI Hallucination Lab</h1>
+                    <p>Server is running ✅</p>
+                    <p style="color:#2ecc71;">🟢 Online</p>
+                    <p style="color:#6f6b87;font-size:0.8rem;margin-top:1rem;">
+                        Please upload index.html to the public folder.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `);
+    }
 });
 
 // ─── START ───
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Serving: ${publicPath}`);
+    console.log(`✅ Serving files from: ${publicPath}`);
+    console.log(`✅ Index file exists: ${fs.existsSync(indexPath)}`);
     console.log(`✅ API Key: ${API_KEY && API_KEY.startsWith('nvapi-') ? '✓ Valid' : '✗ Invalid'}`);
     console.log(`📦 Cache: Enabled`);
 });
