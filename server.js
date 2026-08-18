@@ -28,9 +28,9 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 // ─── HELPER: Generate content with Gemini ───
 async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
-        // ✅ USING WORKING MODEL: gemini-2.5-flash
+        // ✅ USING CORRECT MODEL FOR THIS KEY
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-2.5-flash',  // ← FIXED MODEL NAME
+            model: 'gemini-1.5-pro',
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -49,9 +49,8 @@ async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500
 // ─── HELPER: Generate JSON from Gemini ───
 async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
-        // ✅ USING WORKING MODEL: gemini-2.5-flash
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-2.5-flash',  // ← FIXED MODEL NAME
+            model: 'gemini-1.5-pro',
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -81,7 +80,7 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         apiKeySet: !!API_KEY,
         provider: 'Google Gemini',
-        model: 'gemini-2.5-flash'
+        model: 'gemini-1.5-pro'
     });
 });
 
@@ -169,6 +168,6 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
     console.log(`✅ API Provider: Google Gemini`);
-    console.log(`✅ Model: gemini-2.5-flash`);
+    console.log(`✅ Model: gemini-1.5-pro`);
     console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
 });
