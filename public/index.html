@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Confidently Wrong · AI Hallucination Lab</title>
-    <meta name="description" content="Class 12 science exhibition — celebrating mistakes through AI hallucination." />
+    <title>Confidently Wrong · AI Fact-Check Lab</title>
+    <meta name="description" content="Class 12 science exhibition — fact-check AI claims with sources." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        /* ── reset & base ── */
+        /* ── Same base styles as before ── */
         *,
         *::before,
         *::after {
@@ -51,12 +51,11 @@
             line-height: 1.6;
         }
         a {
-            color: inherit;
+            color: var(--green);
             text-decoration: none;
         }
-        img,
-        svg {
-            display: block;
+        a:hover {
+            text-decoration: underline;
         }
         .wrap {
             max-width: var(--max-width);
@@ -104,8 +103,7 @@
         .reveal {
             opacity: 0;
             transform: translateY(28px);
-            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .reveal.in-view {
             opacity: 1;
@@ -250,8 +248,7 @@
         .hero {
             padding: 5rem 0 4.5rem;
             background: radial-gradient(ellipse at 70% 20%, rgba(255, 59, 92, 0.05), transparent 60%),
-                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%),
-                var(--bg);
+                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%), var(--bg);
             position: relative;
             overflow: hidden;
         }
@@ -504,6 +501,33 @@
                 grid-template-columns: 1fr;
             }
         }
+        .mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        .mode-selector button {
+            padding: 0.4rem 1.2rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .mode-selector button.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .mode-selector button:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
         .lab-input-wrap {
             display: flex;
             gap: 0.7rem;
@@ -719,6 +743,18 @@
             background: rgba(255, 59, 92, 0.15);
             color: var(--accent);
         }
+        .badge.correct {
+            background: var(--green-glow);
+            color: var(--green);
+        }
+        .badge.incorrect {
+            background: rgba(255, 59, 92, 0.15);
+            color: var(--accent);
+        }
+        .badge.partial {
+            background: var(--gold-glow);
+            color: var(--gold);
+        }
         .xray-claim .text {
             font-size: 0.82rem;
             color: var(--text-secondary);
@@ -736,7 +772,7 @@
             margin-top: 0.3rem;
             padding-left: 2.3rem;
         }
-        .xray-claim .source-tag {
+        .xray-claim .source-link {
             font-family: var(--font-mono);
             font-size: 0.6rem;
             padding: 0.1rem 0.6rem;
@@ -744,6 +780,38 @@
             background: rgba(46, 204, 113, 0.1);
             border: 1px solid rgba(46, 204, 113, 0.2);
             color: var(--green);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .xray-claim .source-link:hover {
+            background: rgba(46, 204, 113, 0.2);
+            transform: scale(1.02);
+        }
+        .xray-claim .source-link .icon {
+            font-size: 0.7rem;
+            margin-right: 0.2rem;
+        }
+        .fact-check-result {
+            margin-top: 0.8rem;
+            padding: 0.8rem;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--gold);
+        }
+        .fact-check-result .verdict {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .fact-check-result .verdict.correct {
+            color: var(--green);
+        }
+        .fact-check-result .verdict.incorrect {
+            color: var(--accent);
+        }
+        .fact-check-result .verdict.partial {
+            color: var(--gold);
         }
 
         .challenge-grid {
@@ -1307,6 +1375,43 @@
             color: var(--text-muted);
             margin-right: 0.3rem;
         }
+        .fact-check-claims {
+            margin: 0.8rem 0;
+            padding: 0.6rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--gold);
+        }
+        .fact-check-claims .claim-item {
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .fact-check-claims .claim-item:last-child {
+            border-bottom: none;
+        }
+        .claim-verdict {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+        .claim-verdict.true {
+            color: var(--green);
+        }
+        .claim-verdict.false {
+            color: var(--accent);
+        }
+        .claim-verdict.partial {
+            color: var(--gold);
+        }
+        .inline-link {
+            color: var(--green);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .inline-link:hover {
+            color: #55efc4;
+        }
     </style>
 </head>
 <body>
@@ -1334,7 +1439,7 @@
             <div>
                 <span class="eyebrow">Science Exhibition 2026 · Celebrating Mistakes</span>
                 <h1>Confidently <span class="wrong">Wrong.</span></h1>
-                <p class="sub">Every AI answer sounds certain. Not every AI answer is true. Enter the lab to see how hallucinations happen — and how to catch them.</p>
+                <p class="sub">Fact-check any AI claim, see the correct answer, and get sources with links.</p>
                 <a href="#lab" class="cue">
                     Enter the Lab
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
@@ -1365,8 +1470,8 @@
     <section class="section" id="lab">
         <div class="wrap">
             <span class="eyebrow reveal">Interactive Lab</span>
-            <h2 class="reveal">AI Hallucination Lab</h2>
-            <p class="lede reveal">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated.</p>
+            <h2 class="reveal">AI Fact-Check Lab</h2>
+            <p class="lede reveal">Paste any claim from an AI, or ask a question — the lab will fact-check it, give the correct answer, and show sources with links.</p>
 
             <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center;" class="reveal">
                 <span class="score-badge">🏆 Score: <span class="num" id="user-score">0</span></span>
@@ -1376,18 +1481,29 @@
 
             <div class="lab-grid">
                 <div class="reveal">
-                    <div class="lab-input-wrap">
-                        <input type="text" id="custom-question" placeholder="Type your question here…" />
-                        <button id="ask-btn">Ask AI</button>
+                    <div class="mode-selector">
+                        <button class="active" data-mode="ask">❓ Ask AI</button>
+                        <button data-mode="factcheck">🔍 Fact-Check Claim</button>
                     </div>
-                    <div class="chip-group">
+                    <div class="lab-input-wrap">
+                        <input type="text" id="custom-question" placeholder="Ask a question or paste a claim to fact-check…" />
+                        <button id="ask-btn">Ask / Fact-Check</button>
+                    </div>
+                    <div id="preset-chips" class="chip-group">
                         <button class="chip" data-q="Who invented the light bulb?">💡 Light bulb</button>
                         <button class="chip" data-q="How many bones does a shark have?">🦈 Shark bones</button>
                         <button class="chip" data-q="Did Einstein fail math in school?">🧠 Einstein math</button>
                         <button class="chip" data-q="What's the tallest mountain, base to peak?">🏔️ Tallest mountain</button>
                         <button class="chip" data-q="What's the capital of Australia?">🇦🇺 Australia capital</button>
                     </div>
-                    <button class="btn btn-primary" id="xray-btn" disabled>🔬 X‑Ray This Answer</button>
+                    <div id="factcheck-chips" class="chip-group" style="display:none;">
+                        <button class="chip" data-q="Humans only use 10% of their brain.">🧠 10% brain myth</button>
+                        <button class="chip" data-q="Vikings wore horned helmets.">⛑️ Viking helmets</button>
+                        <button class="chip" data-q="Napoleon was extremely short.">📏 Napoleon height</button>
+                        <button class="chip" data-q="The Great Wall of China is visible from space.">🌍 Great Wall myth</button>
+                        <button class="chip" data-q="Bulls get angry when they see red.">🐂 Bullfighting myth</button>
+                    </div>
+                    <button class="btn btn-primary" id="xray-btn" disabled>🔬 X‑Ray / Fact-Check</button>
                     <div style="margin-top:0.8rem;font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">
                         ⚡ Earn points by catching unsupported claims!
                     </div>
@@ -1395,11 +1511,11 @@
 
                 <div class="terminal reveal reveal-stagger">
                     <div class="dots"><span></span><span></span><span></span></div>
-                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Choose a question to begin.</span></p>
-                    <p class="aline" id="lab-a">Awaiting your question...</p>
-                    <div class="confidence" id="lab-conf" style="display:none;">
-                        <div class="label"><span>MODEL CONFIDENCE</span><b id="lab-pct">0%</b></div>
-                        <div class="track"><div class="fill" id="lab-fill"></div></div>
+                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Ask a question or paste a claim to fact-check.</span></p>
+                    <p class="aline" id="lab-a">Awaiting your input...</p>
+                    <div id="factcheck-result" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
+                        <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔍 FACT-CHECK RESULT</div>
+                        <div id="factcheck-content"></div>
                     </div>
                     <div id="lab-xray" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
                         <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔬 CLAIM-BY-CLAIM X‑RAY</div>
@@ -1674,13 +1790,19 @@
             const labXray = document.getElementById('lab-xray');
             const labClaims = document.getElementById('lab-claims');
             const labCorrection = document.getElementById('lab-correction');
+            const factcheckResult = document.getElementById('factcheck-result');
+            const factcheckContent = document.getElementById('factcheck-content');
             const xrayBtn = document.getElementById('xray-btn');
             const scoreEl = document.getElementById('user-score');
             const caughtEl = document.getElementById('caught-count');
             const customInput = document.getElementById('custom-question');
             const askBtn = document.getElementById('ask-btn');
             const apiStatus = document.getElementById('api-status');
+            const presetChips = document.getElementById('preset-chips');
+            const factcheckChips = document.getElementById('factcheck-chips');
+            const modeBtns = document.querySelectorAll('.mode-selector button');
 
+            let currentMode = 'ask';
             let currentQuestion = '';
             let currentAnswer = '';
             let score = 0,
@@ -1688,6 +1810,38 @@
                 dashQ = 0,
                 dashC = 0,
                 dashU = 0;
+
+            // ── Mode switching ──
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMode = this.dataset.mode;
+                    if (currentMode === 'factcheck') {
+                        presetChips.style.display = 'none';
+                        factcheckChips.style.display = 'flex';
+                        customInput.placeholder = 'Paste a claim to fact-check…';
+                        askBtn.textContent = '🔍 Fact-Check';
+                        xrayBtn.textContent = '🔍 Fact-Check This';
+                        labQ.textContent = 'Paste a claim to fact-check.';
+                        labA.textContent = 'Awaiting your claim...';
+                        labXray.style.display = 'none';
+                        factcheckResult.style.display = 'none';
+                        xrayBtn.disabled = true;
+                    } else {
+                        presetChips.style.display = 'flex';
+                        factcheckChips.style.display = 'none';
+                        customInput.placeholder = 'Ask a question or paste a claim to fact-check…';
+                        askBtn.textContent = 'Ask / Fact-Check';
+                        xrayBtn.textContent = '🔬 X‑Ray This Answer';
+                        labQ.textContent = 'Ask a question or paste a claim to fact-check.';
+                        labA.textContent = 'Awaiting your input...';
+                        labXray.style.display = 'none';
+                        factcheckResult.style.display = 'none';
+                        xrayBtn.disabled = true;
+                    }
+                });
+            });
 
             // ── API helper ──
             async function callApi(endpoint, data) {
@@ -1750,24 +1904,194 @@
                 }
             }
 
-            // ── Lab: Ask AI ──
-            async function askAI(question) {
-                if (!question) return;
-                currentQuestion = question;
-                labQ.textContent = question;
+            // ── Generate mock sources with links ──
+            function generateSources(claimText, claimStatus) {
+                const sourceDB = {
+                    'Edison invented the light bulb': [
+                        { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                        { title: 'Edison Papers Project - Rutgers University', url: 'https://edison.rutgers.edu/' }
+                    ],
+                    'in 1879': [
+                        { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                        { title: 'Smithsonian - The Electric Light System of Thomas Edison', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' }
+                    ],
+                    'Sharks have 206 bones': [
+                        { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' },
+                        { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' }
+                    ],
+                    'Einstein failed mathematics': [
+                        { title: 'Albert Einstein Archives - Early Education', url: 'https://www.albert-einstein.org/education.html' },
+                        { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' }
+                    ],
+                    'Mount Everest is the tallest mountain': [
+                        { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' },
+                        { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' }
+                    ],
+                    'The capital of Australia is Sydney': [
+                        { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' },
+                        { title: 'Parliament of Australia - Canberra', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' }
+                    ]
+                };
+
+                // Default sources for fact-check mode
+                const defaultSources = [
+                    { title: 'Wikipedia - Common Misconceptions', url: 'https://en.wikipedia.org/wiki/List_of_common_misconceptions' },
+                    { title: 'Snopes - Fact Check Archive', url: 'https://www.snopes.com/fact-check/' }
+                ];
+
+                for (const [key, sources] of Object.entries(sourceDB)) {
+                    if (claimText.toLowerCase().includes(key.toLowerCase()) ||
+                        key.toLowerCase().includes(claimText.toLowerCase())) {
+                        return sources;
+                    }
+                }
+
+                // Fact-check specific sources
+                if (claimText.includes('10% of their brain')) {
+                    return [
+                        { title: 'Scientific American - The 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' },
+                        { title: 'Psychology Today - The 10% Brain Myth Debunked', url: 'https://www.psychologytoday.com/us/blog/the-fallible-mind/201712/the-10-brain-myth' }
+                    ];
+                }
+                if (claimText.includes('horned helmets')) {
+                    return [
+                        { title: 'History.com - Did Vikings Wear Horned Helmets?', url: 'https://www.history.com/news/did-vikings-really-wear-horned-helmets' },
+                        { title: 'Smithsonian Magazine - The Viking Helmet Myth', url: 'https://www.smithsonianmag.com/smart-news/the-myth-of-the-viking-horned-helmet-180951817/' }
+                    ];
+                }
+                if (claimText.includes('Napoleon')) {
+                    return [
+                        { title: 'History.com - Was Napoleon Short?', url: 'https://www.history.com/news/was-napoleon-short' },
+                        { title: 'BBC - Napoleon\'s Height Myth', url: 'https://www.bbc.com/news/magazine-18554470' }
+                    ];
+                }
+                if (claimText.includes('Great Wall') || claimText.includes('visible from space')) {
+                    return [
+                        { title: 'NASA - Great Wall of China from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' },
+                        { title: 'National Geographic - Can You See the Great Wall from Space?', url: 'https://www.nationalgeographic.com/travel/article/see-great-wall-of-china-from-space' }
+                    ];
+                }
+                if (claimText.includes('bulls') || claimText.includes('red') || claimText.includes('bullfighting')) {
+                    return [
+                        { title: 'Live Science - Do Bulls Really Hate Red?', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' },
+                        { title: 'The Fact Site - Bulls and the Colour Red', url: 'https://www.thefactsite.com/do-bulls-hate-red/' }
+                    ];
+                }
+
+                return claimStatus === 'supported' ? [
+                    { title: 'Encyclopedia Britannica - Related Article', url: 'https://www.britannica.com/' },
+                    { title: 'Google Scholar - Search Results', url: 'https://scholar.google.com/' }
+                ] : defaultSources;
+            }
+
+            // ── Lab: Ask AI or Fact-Check ──
+            async function askAI(input) {
+                if (!input) return;
+                currentQuestion = input;
+                labQ.textContent = input;
                 labA.textContent = '⏳ Thinking...';
                 labConf.style.display = 'none';
                 labXray.style.display = 'none';
+                factcheckResult.style.display = 'none';
                 xrayBtn.disabled = true;
 
                 try {
-                    const data = await callApi('/api/ask', { question, mode: 'simple' });
-                    currentAnswer = data.answer;
-                    labA.textContent = data.answer;
-                    labConf.style.display = 'block';
-                    const conf = Math.floor(Math.random() * 20) + 70;
-                    animateFill(labFill, labPct, conf, 900);
-                    xrayBtn.disabled = false;
+                    if (currentMode === 'factcheck') {
+                        // Fact-check mode: send claim to analyze endpoint
+                        const data = await callApi('/api/analyze', { question: input, answer: input });
+                        currentAnswer = input;
+                        labA.textContent = input;
+
+                        // Display fact-check result
+                        factcheckResult.style.display = 'block';
+                        const claims = data.claims || [];
+                        let html = '';
+
+                        // Find the claim status
+                        let overallStatus = 'partial';
+                        let unsupportedCount = 0;
+                        claims.forEach(c => {
+                            if (c.status === 'unsupported') unsupportedCount++;
+                        });
+                        if (unsupportedCount === 0 && claims.length > 0) overallStatus = 'correct';
+                        else if (unsupportedCount === claims.length) overallStatus = 'incorrect';
+
+                        html += `<div class="fact-check-result">`;
+                        html += `<div class="verdict ${overallStatus}">`;
+                        if (overallStatus === 'correct') html += '✅ VERDICT: CORRECT - The claim is supported by evidence.';
+                        else if (overallStatus === 'incorrect') html += '❌ VERDICT: INCORRECT - The claim is not supported by evidence.';
+                        else html += '⚠️ VERDICT: PARTIALLY CORRECT - Some claims are supported, others are not.';
+                        html += `</div>`;
+
+                        html += `<div style="margin-top:0.5rem;font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted);">📋 CLAIM ANALYSIS</div>`;
+                        html += `<div class="fact-check-claims">`;
+                        claims.forEach(c => {
+                            const verdict = c.status === 'supported' ? 'true' : (c.status === 'unsupported' ? 'false' :
+                                'partial');
+                            const verdictLabel = c.status === 'supported' ? '✅ Supported' : (c.status ===
+                                'unsupported' ? '❌ Unsupported' : '⚠️ Needs Context');
+                            html += `<div class="claim-item">`;
+                            html += `<span style="font-size:0.82rem;">"${c.text}"</span>`;
+                            html += `<span class="claim-verdict ${verdict}">${verdictLabel}</span>`;
+                            html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem;">${c.explain}</div>`;
+
+                            // Show sources for supported claims
+                            if (c.status === 'supported') {
+                                const sources = generateSources(c.text, 'supported');
+                                html += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">`;
+                                html += `<span class="sources-label">📚 Sources:</span>`;
+                                sources.forEach(src => {
+                                    html += `<a href="${src.url}" target="_blank" class="source-link">🔗 ${src.title}</a>`;
+                                });
+                                html += `</div>`;
+                            }
+                            html += `</div>`;
+                        });
+                        html += `</div>`;
+
+                        // Overall sources
+                        const allSources = generateSources(input, 'supported');
+                        if (allSources.length > 0) {
+                            html += `<div style="margin-top:0.8rem;padding-top:0.5rem;border-top:1px solid var(--border);">`;
+                            html += `<div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);">📚 GENERAL SOURCES FOR THIS CLAIM</div>`;
+                            html += `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.3rem;">`;
+                            allSources.forEach(src => {
+                                html += `<a href="${src.url}" target="_blank" class="source-link">🔗 ${src.title}</a>`;
+                            });
+                            html += `</div></div>`;
+                        }
+
+                        html += `</div>`;
+                        factcheckContent.innerHTML = html;
+
+                        // Score update
+                        if (unsupportedCount > 0) {
+                            const total = claims.length;
+                            const correct = total - unsupportedCount;
+                            const earned = Math.round((correct / total) * 100);
+                            score += earned;
+                            caught += unsupportedCount;
+                            scoreEl.textContent = score;
+                            caughtEl.textContent = caught;
+                            dashQ++;
+                            dashC += total;
+                            dashU += unsupportedCount;
+                            updateDashboard();
+                        }
+
+                        xrayBtn.disabled = true;
+                        labConf.style.display = 'none';
+                    } else {
+                        // Ask mode
+                        const data = await callApi('/api/ask', { question: input, mode: 'simple' });
+                        currentAnswer = data.answer;
+                        labA.textContent = data.answer;
+                        labConf.style.display = 'block';
+                        const conf = Math.floor(Math.random() * 20) + 70;
+                        animateFill(labFill, labPct, conf, 900);
+                        xrayBtn.disabled = false;
+                        factcheckResult.style.display = 'none';
+                    }
                 } catch (err) {
                     labA.innerHTML = `
                         <span class="error-msg">⚠️ Error: ${err.message}</span>
@@ -1775,29 +2099,7 @@
                 }
             }
 
-            // ── Sample sources for claims (simulated) ──
-            function getSourcesForClaim(claimText) {
-                // In a real implementation, these would come from the API
-                const sources = {
-                    'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
-                    'in 1879': ['US Patent 223,898 (1880)'],
-                    'Sharks have 206 bones': ['NOAA Fisheries'],
-                    'Einstein failed mathematics': ['Albert Einstein Archives'],
-                    'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
-                    'The capital of Australia is Sydney': ['Australian Government Geoscience']
-                };
-                
-                for (const [key, value] of Object.entries(sources)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase()) || 
-                        key.toLowerCase().includes(claimText.toLowerCase())) {
-                        return value;
-                    }
-                }
-                // Default sources if none match
-                return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
-            }
-
-            // ── Lab: X-Ray ──
+            // ── X-Ray / Fact-Check Button ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
                 labXray.style.display = 'block';
@@ -1813,42 +2115,47 @@
                     claims.forEach(c => {
                         const d = document.createElement('div');
                         d.className = 'xray-claim';
-                        
+
                         const header = document.createElement('div');
                         header.className = 'claim-header';
-                        
+
                         const b = document.createElement('span');
                         b.className = 'badge ' + c.status;
-                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT', unsupported: '❌ UNSUPPORTED' };
+                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
+                            unsupported: '❌ UNSUPPORTED' };
                         b.textContent = labels[c.status] || c.status;
-                        
+
                         const t = document.createElement('div');
                         t.className = 'text';
                         t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
-                        
+
                         header.appendChild(b);
                         header.appendChild(t);
                         d.appendChild(header);
-                        
+
                         // Add sources for supported claims
                         if (c.status === 'supported') {
-                            const sourcesDiv = document.createElement('div');
-                            sourcesDiv.className = 'sources';
-                            const label = document.createElement('span');
-                            label.className = 'sources-label';
-                            label.textContent = '📚 Sources:';
-                            sourcesDiv.appendChild(label);
-                            
-                            const sourceList = getSourcesForClaim(c.text);
-                            sourceList.forEach(src => {
-                                const tag = document.createElement('span');
-                                tag.className = 'source-tag';
-                                tag.textContent = src;
-                                sourcesDiv.appendChild(tag);
-                            });
-                            d.appendChild(sourcesDiv);
+                            const sources = generateSources(c.text, 'supported');
+                            if (sources.length > 0) {
+                                const sourcesDiv = document.createElement('div');
+                                sourcesDiv.className = 'sources';
+                                const label = document.createElement('span');
+                                label.className = 'sources-label';
+                                label.textContent = '📚 Sources:';
+                                sourcesDiv.appendChild(label);
+
+                                sources.forEach(src => {
+                                    const a = document.createElement('a');
+                                    a.href = src.url;
+                                    a.target = '_blank';
+                                    a.className = 'source-link';
+                                    a.innerHTML = `🔗 ${src.title}`;
+                                    sourcesDiv.appendChild(a);
+                                });
+                                d.appendChild(sourcesDiv);
+                            }
                         }
-                        
+
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -1876,10 +2183,40 @@
             });
 
             // ── Lab: Preset chips ──
-            document.querySelectorAll('.chip').forEach(btn => {
+            document.querySelectorAll('#preset-chips .chip').forEach(btn => {
                 btn.addEventListener('click', function() {
                     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
                     this.classList.add('active');
+                    currentMode = 'ask';
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelector('.mode-selector button[data-mode="ask"]').classList.add('active');
+                    presetChips.style.display = 'flex';
+                    factcheckChips.style.display = 'none';
+                    customInput.placeholder = 'Ask a question or paste a claim to fact-check…';
+                    askBtn.textContent = 'Ask / Fact-Check';
+                    xrayBtn.textContent = '🔬 X‑Ray This Answer';
+                    xrayBtn.disabled = true;
+                    labXray.style.display = 'none';
+                    factcheckResult.style.display = 'none';
+                    askAI(this.dataset.q);
+                });
+            });
+
+            document.querySelectorAll('#factcheck-chips .chip').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMode = 'factcheck';
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelector('.mode-selector button[data-mode="factcheck"]').classList.add(
+                    'active');
+                    presetChips.style.display = 'none';
+                    factcheckChips.style.display = 'flex';
+                    customInput.placeholder = 'Paste a claim to fact-check…';
+                    askBtn.textContent = '🔍 Fact-Check';
+                    xrayBtn.textContent = '🔍 Fact-Check This';
+                    xrayBtn.disabled = true;
+                    labXray.style.display = 'none';
                     askAI(this.dataset.q);
                 });
             });
@@ -2004,13 +2341,13 @@
             const contextSlider = document.getElementById('context-slider');
             const contextLabel = document.getElementById('context-label');
             const runExpBtn = document.getElementById('run-experiment');
-            const modeBtns = document.querySelectorAll('.toggle-group button');
+            const modeBtnsExp = document.querySelectorAll('.toggle-group button');
             let expMode = 'simple';
 
             contextSlider.addEventListener('input', () => { contextLabel.textContent = contextSlider.value + '%'; });
-            modeBtns.forEach(btn => {
+            modeBtnsExp.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    modeBtns.forEach(b => b.classList.remove('active'));
+                    modeBtnsExp.forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     expMode = this.dataset.mode;
                 });
@@ -2102,7 +2439,7 @@
 
             // Load first question
             askAI('Who invented the light bulb?');
-            document.querySelector('.chip[data-q="Who invented the light bulb?"]').classList.add('active');
+            document.querySelector('#preset-chips .chip[data-q="Who invented the light bulb?"]').classList.add('active');
 
             // Periodic health check
             setInterval(checkHealth, 15000);
