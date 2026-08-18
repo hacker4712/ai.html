@@ -8,36 +8,36 @@ const { OpenAI } = require('openai');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware - ORDER MATTERS!
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// ─── PUBLIC FOLDER ───
+// ─── CREATE PUBLIC FOLDER WITH INDEX.HTML ───
 const publicPath = path.join(__dirname, 'public');
 const indexPath = path.join(publicPath, 'index.html');
 
-console.log(`📁 Public folder: ${publicPath}`);
+console.log(`📁 Public folder path: ${publicPath}`);
 
-// CREATE PUBLIC FOLDER IF MISSING
+// Create public folder if it doesn't exist
 if (!fs.existsSync(publicPath)) {
     console.log('📝 Creating public folder...');
     fs.mkdirSync(publicPath, { recursive: true });
 }
 
-// CREATE INDEX.HTML IF MISSING
+// Create index.html if it doesn't exist
 if (!fs.existsSync(indexPath)) {
     console.log('📝 Creating index.html...');
-    const fallbackHTML = `<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
     <title>AI Hallucination Lab</title>
     <style>
         body { background: #0b0b14; color: #f0edf6; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { text-align: center; padding: 2rem; background: #13131f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); }
+        .container { text-align: center; padding: 2rem; background: #13131f; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); max-width: 600px; }
         h1 { color: #ff3b5c; }
         .status { color: #2ecc71; font-weight: bold; }
-        .error { color: #ff3b5c; }
         .btn { display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #ff3b5c; color: white; border-radius: 8px; text-decoration: none; }
+        .info { color: #6f6b87; font-size: 0.8rem; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -45,27 +45,26 @@ if (!fs.existsSync(indexPath)) {
         <h1>🧠 AI Hallucination Lab</h1>
         <p>Server is running ✅</p>
         <p class="status">🟢 Online</p>
-        <p style="color: #6f6b87; font-size: 0.8rem; margin-top: 1rem;">
-            Waiting for index.html to be uploaded to the public folder.
-        </p>
-        <a href="https://github.com" class="btn">Upload Your Website</a>
+        <p class="info">Your website is being deployed. Please upload your index.html to the public folder.</p>
+        <a href="#" class="btn">Refresh</a>
     </div>
 </body>
 </html>`;
-    fs.writeFileSync(indexPath, fallbackHTML);
-    console.log('✅ Created fallback index.html');
-} else {
-    console.log('✅ index.html found');
+    fs.writeFileSync(indexPath, htmlContent);
+    console.log('✅ Created index.html');
 }
+
+// ─── SERVE STATIC FILES ───
+app.use(express.static(publicPath));
 
 // ─── API KEY ───
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
 if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-    console.error('❌ Invalid API key');
+    console.error('❌ Invalid NVIDIA NIM API key!');
 } else {
-    console.log('✅ API Key configured');
+    console.log('✅ NVIDIA NIM API Key is configured');
 }
 
 const client = new OpenAI({
@@ -177,10 +176,9 @@ setInterval(() => {
 }, 60000);
 
 // ════════════════════════════════════════════════
-//  ✅ API ROUTES - MUST COME BEFORE STATIC FILES
+//  API ROUTES
 // ════════════════════════════════════════════════
 
-// ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     res.json({ 
@@ -193,7 +191,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// ─── ASK AI ───
 app.post('/api/ask', async (req, res) => {
     const { question, mode } = req.body;
     
@@ -218,7 +215,6 @@ app.post('/api/ask', async (req, res) => {
     }
 });
 
-// ─── ANALYZE ANSWER ───
 app.post('/api/analyze', async (req, res) => {
     const { question, answer } = req.body;
 
@@ -247,7 +243,6 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid API key' });
@@ -266,49 +261,23 @@ app.post('/api/challenge', async (req, res) => {
     }
 });
 
-// ════════════════════════════════════════════════
-//  📁 STATIC FILES - AFTER API ROUTES
-// ════════════════════════════════════════════════
-
-// Serve static files from public folder
-app.use(express.static(publicPath));
-
-// ─── CATCH-ALL FOR NON-API ROUTES ───
+// ─── CATCH-ALL ROUTE ───
 app.get('*', (req, res) => {
-    // If it's an API route that wasn't matched, return 404 JSON
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
     }
-    
-    // Check if index.html exists
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        // Ultimate fallback
-        res.status(200).send(`
-            <!DOCTYPE html>
-            <html>
-            <head><title>AI Hallucination Lab</title></head>
-            <body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;">
-                <div style="text-align:center;padding:2rem;background:#13131f;border-radius:16px;border:1px solid rgba(255,255,255,0.06);">
-                    <h1 style="color:#ff3b5c;">🧠 AI Hallucination Lab</h1>
-                    <p>Server is running ✅</p>
-                    <p style="color:#2ecc71;">🟢 Online</p>
-                    <p style="color:#6f6b87;font-size:0.8rem;margin-top:1rem;">
-                        Please upload index.html to the public folder.
-                    </p>
-                </div>
-            </body>
-            </html>
-        `);
-    }
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            console.error('Error sending index.html:', err);
+            res.status(500).send('Error loading page');
+        }
+    });
 });
 
-// ─── START ───
+// ─── START SERVER ───
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${publicPath}`);
     console.log(`✅ Index file exists: ${fs.existsSync(indexPath)}`);
     console.log(`✅ API Key: ${API_KEY && API_KEY.startsWith('nvapi-') ? '✓ Valid' : '✗ Invalid'}`);
-    console.log(`📦 Cache: Enabled`);
 });
