@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { OpenAI } = require('openai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,75 +12,74 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ─── YOUR API KEY ───
-const HARDCODED_KEY = 'AQ.Ab8RN6K0OwsfSP1RAB4Oabv9wJhOhltaY4GJLiTYijjcdahGVg';
-const API_KEY = process.env.GOOGLE_API_KEY || HARDCODED_KEY;
+// ─── YOUR OPENROUTER API KEY ───
+const HARDCODED_KEY = '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';
+const API_KEY = process.env.OPENROUTER_API_KEY || HARDCODED_KEY;
 
-if (!API_KEY) {
-    console.error('❌ API Key is missing!');
+if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
+    console.error('❌ Invalid OpenRouter API key! Keys must start with "sk-or-v1-..."');
+    console.error('   Get a valid key from: https://openrouter.ai/keys');
 } else {
-    console.log('✅ API Key is configured');
+    console.log('✅ OpenRouter API Key is configured');
 }
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(API_KEY);
+// Initialize OpenAI client with OpenRouter endpoint
+const client = new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: API_KEY,
+    defaultHeaders: {
+        'HTTP-Referer': 'https://your-app-name.onrender.com', // Replace with your URL
+        'X-Title': 'AI Hallucination Exhibition'
+    }
+});
 
-// ─── HELPER: Generate content with Gemini ───
-async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500) {
+// ─── HELPER: Generate content with OpenRouter ───
+async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
-        // ✅ USING CORRECT MODEL FOR THIS KEY
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-pro',
-            generationConfig: {
-                temperature: temperature,
-                maxOutputTokens: maxTokens,
-            }
+        const completion = await client.chat.completions.create({
+            model: 'meta-llama/llama-3.3-70b-instruct:free', // Free model
+            messages: [{ role: 'user', content: prompt }],
+            temperature: temperature,
+            max_tokens: maxTokens,
         });
-        
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        return completion.choices[0].message.content;
     } catch (error) {
-        console.error('Gemini API Error:', error);
+        console.error('OpenRouter API Error:', error);
         throw error;
     }
 }
 
-// ─── HELPER: Generate JSON from Gemini ───
-async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
+// ─── HELPER: Generate JSON from OpenRouter ───
+async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-pro',
-            generationConfig: {
-                temperature: temperature,
-                maxOutputTokens: maxTokens,
-            }
+        const completion = await client.chat.completions.create({
+            model: 'meta-llama/llama-3.3-70b-instruct:free',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: temperature,
+            max_tokens: maxTokens,
         });
-        
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-        
+        const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
         }
         return JSON.parse(text);
     } catch (error) {
-        console.error('Gemini JSON Error:', error);
+        console.error('OpenRouter JSON Error:', error);
         throw error;
     }
 }
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
+    const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
     res.json({ 
-        status: 'ok', 
-        message: 'Server is running with Gemini API',
+        status: keyValid ? 'ok' : 'error',
+        message: keyValid ? 'Server is running with OpenRouter API' : 'API key not configured',
         timestamp: new Date().toISOString(),
-        apiKeySet: !!API_KEY,
-        provider: 'Google Gemini',
-        model: 'gemini-1.5-pro'
+        apiKeySet: keyValid,
+        provider: 'OpenRouter',
+        model: 'Llama 3.3 70B (free)'
     });
 });
 
@@ -92,8 +91,8 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'Google API key is not configured' });
+    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
+        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
     }
 
     let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
@@ -103,7 +102,7 @@ app.post('/api/ask', async (req, res) => {
 
     try {
         const fullPrompt = `${systemPrompt}\n\nQuestion: ${question}`;
-        const answer = await generateGeminiResponse(fullPrompt, 0.7, 500);
+        const answer = await generateResponse(fullPrompt, 0.7, 500);
         res.json({ answer });
     } catch (error) {
         console.error('Error in /api/ask:', error);
@@ -119,8 +118,8 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'Google API key is not configured' });
+    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
+        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
     }
 
     const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
@@ -131,7 +130,7 @@ app.post('/api/analyze', async (req, res) => {
     Answer: "${answer}"`;
 
     try {
-        const result = await generateGeminiJSON(prompt, 0.3, 800);
+        const result = await generateJSON(prompt, 0.3, 800);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/analyze:', error);
@@ -141,8 +140,8 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    if (!API_KEY) {
-        return res.status(500).json({ error: 'Google API key is not configured' });
+    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
+        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
     }
 
     const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
@@ -150,7 +149,7 @@ app.post('/api/challenge', async (req, res) => {
     Return strictly as JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
 
     try {
-        const result = await generateGeminiJSON(prompt, 0.8, 600);
+        const result = await generateJSON(prompt, 0.8, 600);
         res.json(result);
     } catch (error) {
         console.error('Error in /api/challenge:', error);
@@ -167,7 +166,11 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Provider: Google Gemini`);
-    console.log(`✅ Model: gemini-1.5-pro`);
-    console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
+    console.log(`✅ API Provider: OpenRouter`);
+    console.log(`✅ Model: Llama 3.3 70B (free)`);
+    const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid (sk-or-v1-...)' : '✗ Invalid - Must start with sk-or-v1-...'}`);
+    if (!keyValid) {
+        console.log(`   ⚠️  Get a valid key from: https://openrouter.ai/keys`);
+    }
 });
