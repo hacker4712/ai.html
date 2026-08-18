@@ -12,29 +12,32 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ─── YOUR OPENROUTER API KEY ───
-const HARDCODED_KEY = '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';
-const API_KEY = process.env.OPENROUTER_API_KEY || HARDCODED_KEY;
+// ─── YOUR NVIDIA NIM API KEY ───
+const HARDCODED_KEY = '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';
+const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
-if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
-    console.error('❌ Invalid OpenRouter API key! Keys must start with "sk-or-v1-..."');
-    console.error('   Get a valid key from: https://openrouter.ai/keys');
+if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
+    console.error('❌ Invalid NVIDIA NIM API key! Keys must start with "nvapi-..."');
+    console.error('   Get a valid key from: https://build.nvidia.com');
 } else {
-    console.log('✅ OpenRouter API Key is configured');
+    console.log('✅ NVIDIA NIM API Key is configured');
 }
 
-// Initialize OpenAI client with OpenRouter endpoint
+// Initialize OpenAI client with NVIDIA NIM endpoint
 const client = new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL: 'https://integrate.api.nvidia.com/v1',
     apiKey: API_KEY,
     defaultHeaders: {
-        'HTTP-Referer': 'https://your-app-name.onrender.com',
-        'X-Title': 'AI Hallucination Exhibition'
+        'Content-Type': 'application/json'
     }
 });
 
-// ─── TRY THIS MODEL FIRST ───
-const FREE_MODEL = 'deepseek/deepseek-r1:free';
+// ─── NVIDIA NIM FREE MODELS ───
+// Choose one of these:
+// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
+// 2. 'mistralai/mistral-large'       - Good quality
+// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
+const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
@@ -47,7 +50,7 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
         });
         return completion.choices[0].message.content;
     } catch (error) {
-        console.error('OpenRouter API Error:', error);
+        console.error('NVIDIA NIM API Error:', error);
         throw error;
     }
 }
@@ -68,20 +71,20 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
         }
         return JSON.parse(text);
     } catch (error) {
-        console.error('OpenRouter JSON Error:', error);
+        console.error('NVIDIA NIM JSON Error:', error);
         throw error;
     }
 }
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
-    const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
+    const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     res.json({ 
         status: keyValid ? 'ok' : 'error',
-        message: keyValid ? 'Server is running with OpenRouter API' : 'API key not configured',
+        message: keyValid ? 'Server is running with NVIDIA NIM API' : 'API key not configured',
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
-        provider: 'OpenRouter',
+        provider: 'NVIDIA NIM',
         model: FREE_MODEL
     });
 });
@@ -94,8 +97,8 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
-        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
+    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
     let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
@@ -121,8 +124,8 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
-        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
+    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
     const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
@@ -143,8 +146,8 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    if (!API_KEY || !API_KEY.startsWith('sk-or-v1-')) {
-        return res.status(500).json({ error: 'Invalid OpenRouter API key. Keys must start with "sk-or-v1-..."' });
+    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
+        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
     const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
@@ -169,8 +172,8 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Provider: OpenRouter`);
-    console.log(`✅ Model: ${FREE_MODEL} (FREE)`);
-    const keyValid = !!(API_KEY && API_KEY.startsWith('sk-or-v1-'));
-    console.log(`✅ API Key: ${keyValid ? '✓ Valid' : '✗ Invalid'}`);
+    console.log(`✅ API Provider: NVIDIA NIM`);
+    console.log(`✅ Model: ${FREE_MODEL}`);
+    const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
 });
