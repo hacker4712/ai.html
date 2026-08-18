@@ -33,13 +33,9 @@ const client = new OpenAI({
     }
 });
 
-// ─── FREE MODELS THAT WORK ───
-// Choose one of these:
-// 1. 'google/gemma-3-27b-it:free'      - Best quality (Gemma 3 27B)
-// 2. 'mistralai/mistral-small-3.1-24b-instruct:free' - Good quality
-// 3. 'qwen/qwen-2.5-72b-instruct:free' - Very capable
-// 4. 'deepseek/deepseek-chat:free'     - Good for reasoning
-const FREE_MODEL = 'google/gemma-3-27b-it:free'; // ← Best free model
+// ─── WORKING FREE MODEL ───
+// ✅ Confirmed working on OpenRouter free tier
+const FREE_MODEL = 'mistralai/mistral-small-3.1-24b-instruct:free';
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
