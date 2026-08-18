@@ -13,9 +13,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ─── YOUR NVIDIA NIM API KEY ───
-// Get from: https://build.nvidia.com
-// Key format: nvapi-...
-const HARDCODED_KEY = 'YOUR_NVIDIA_NIM_API_KEY_HERE'; // ← Replace this!
+const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
 if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
@@ -36,9 +34,9 @@ const client = new OpenAI({
 
 // ─── NVIDIA NIM FREE MODELS ───
 // Choose one of these:
-// 1. 'meta/llama-3.1-70b-instruct'  - Best quality
+// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
 // 2. 'mistralai/mistral-large'       - Good quality
-// 3. 'meta/llama-3.2-3b-instruct'   - Faster, lighter
+// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
 const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
 
 // ─── HELPER: Generate content ───
@@ -177,8 +175,5 @@ app.listen(PORT, () => {
     console.log(`✅ API Provider: NVIDIA NIM`);
     console.log(`✅ Model: ${FREE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
-    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid - Must start with nvapi-...'}`);
-    if (!keyValid) {
-        console.log(`   ⚠️  Get a valid key from: https://build.nvidia.com`);
-    }
+    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
 });
