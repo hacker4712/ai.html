@@ -13,10 +13,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // ─── YOUR API KEY ───
-// Key from: https://aistudio.google.com/apikey
 const HARDCODED_KEY = 'AQ.Ab8RN6K0OwsfSP1RAB4Oabv9wJhOhltaY4GJLiTYijjcdahGVg';
-
-// Try environment variable first, fallback to hardcoded
 const API_KEY = process.env.GOOGLE_API_KEY || HARDCODED_KEY;
 
 if (!API_KEY) {
@@ -31,8 +28,9 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 // ─── HELPER: Generate content with Gemini ───
 async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500) {
     try {
+        // ✅ USING WORKING MODEL: gemini-2.5-flash
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',  // ← FIXED MODEL NAME
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -51,8 +49,9 @@ async function generateGeminiResponse(prompt, temperature = 0.7, maxTokens = 500
 // ─── HELPER: Generate JSON from Gemini ───
 async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
     try {
+        // ✅ USING WORKING MODEL: gemini-2.5-flash
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',  // ← FIXED MODEL NAME
             generationConfig: {
                 temperature: temperature,
                 maxOutputTokens: maxTokens,
@@ -63,7 +62,6 @@ async function generateGeminiJSON(prompt, temperature = 0.3, maxTokens = 800) {
         const response = await result.response;
         const text = response.text();
         
-        // Extract JSON from the response (in case it's wrapped in markdown)
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
@@ -82,7 +80,8 @@ app.get('/api/health', (req, res) => {
         message: 'Server is running with Gemini API',
         timestamp: new Date().toISOString(),
         apiKeySet: !!API_KEY,
-        provider: 'Google Gemini'
+        provider: 'Google Gemini',
+        model: 'gemini-2.5-flash'
     });
 });
 
@@ -170,5 +169,6 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
     console.log(`✅ API Provider: Google Gemini`);
+    console.log(`✅ Model: gemini-2.5-flash`);
     console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
 });
