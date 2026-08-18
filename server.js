@@ -14,15 +14,19 @@ app.use(express.json());
 // Serve static files from public folder
 app.use(express.static('public'));
 
-// Check if API key exists
-if (!process.env.OPENAI_API_KEY) {
-    console.error('❌ OPENAI_API_KEY is missing! Please add it to environment variables.');
+// ─── YOUR API KEY IS HERE ───
+// For Render: Set this in Environment Variables
+// For testing: You can hardcode it here (but don't commit to GitHub!)
+const API_KEY = process.env.OPENAI_API_KEY || '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';
+
+if (!API_KEY) {
+    console.error('❌ OPENAI_API_KEY is missing!');
 } else {
     console.log('✅ OPENAI_API_KEY is set');
 }
 
 const openai = new OpenAI({ 
-    apiKey: process.env.OPENAI_API_KEY 
+    apiKey: API_KEY 
 });
 
 // ─── HEALTH CHECK ───
@@ -31,7 +35,7 @@ app.get('/api/health', (req, res) => {
         status: 'ok', 
         message: 'Server is running',
         timestamp: new Date().toISOString(),
-        apiKeySet: !!process.env.OPENAI_API_KEY
+        apiKeySet: !!API_KEY
     });
 });
 
@@ -43,7 +47,7 @@ app.post('/api/ask', async (req, res) => {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'OpenAI API key is not configured' });
     }
 
@@ -77,7 +81,7 @@ app.post('/api/analyze', async (req, res) => {
         return res.status(400).json({ error: 'Question and answer are required' });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'OpenAI API key is not configured' });
     }
 
@@ -106,7 +110,7 @@ app.post('/api/analyze', async (req, res) => {
 
 // ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!API_KEY) {
         return res.status(500).json({ error: 'OpenAI API key is not configured' });
     }
 
@@ -139,5 +143,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Key: ${process.env.OPENAI_API_KEY ? '✓ Set' : '✗ Missing'}`);
+    console.log(`✅ API Key: ${API_KEY ? '✓ Set' : '✗ Missing'}`);
 });
