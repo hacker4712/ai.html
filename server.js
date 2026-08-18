@@ -144,15 +144,34 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE ───
+// ─── GENERATE CHALLENGE (Mixed True/False) ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Generate a tricky multiple-choice question about a common AI hallucination or misconception.
-    The AI has provided a confident but incorrect answer. Provide the question, the AI's wrong answer, the correct answer, and an explanation.
-    Return strictly as JSON: { "question": "...", "ai_answer": "...", "correct_answer": "...", "explanation": "..." }`;
+    const prompt = `Generate a tricky trivia question about a common misconception OR a well-known fact.
+    
+    IMPORTANT: The answer should SOMETIMES be TRUE and SOMETIMES be FALSE - mix it up!
+    - About 50% of the time the AI should give a CORRECT answer
+    - About 50% of the time the AI should give an INCORRECT answer (hallucination)
+    
+    The AI should deliver the answer confidently regardless of whether it's correct or not.
+    
+    Return strictly as JSON with these fields:
+    {
+        "question": "The trivia question",
+        "ai_answer": "The AI's confident answer (can be true or false)",
+        "correct_answer": "The actual correct answer (True or False)",
+        "explanation": "Brief explanation of why the AI is right or wrong"
+    }
+    
+    Examples of good questions:
+    - "Is the Great Wall of China visible from space?" (False - AI says Yes)
+    - "Do humans have more than 200 bones?" (True - AI says Yes)
+    - "Is the capital of Australia Sydney?" (False - AI says Yes)
+    - "Does water boil at 100°C at sea level?" (True - AI says Yes)
+    - "Is the Earth the largest planet in our solar system?" (False - AI says Yes)`;
 
     try {
         const result = await generateJSON(prompt, 0.8, 600);
