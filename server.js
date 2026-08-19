@@ -59,7 +59,7 @@ const client = new OpenAI({
 // ─── NVIDIA NIM FREE MODELS ───
 const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
 
-// ─── CACHE (Only for responses, NOT for challenges) ───
+// ─── CACHE ───
 const cache = new Map();
 const CACHE_TTL = 3600000;
 
@@ -92,21 +92,8 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     }
 }
 
-// ─── HELPER: Generate JSON (NO CACHE for challenges) ───
+// ─── HELPER: Generate JSON ───
 async function generateJSON(prompt, temperature = 0.3, maxTokens = 800, skipCache = false) {
-    // Skip cache for challenges
-    if (!skipCache) {
-        const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
-        if (cache.has(cacheKey)) {
-            const cached = cache.get(cacheKey);
-            if (Date.now() - cached.timestamp < CACHE_TTL) {
-                console.log('📦 Cached JSON');
-                return cached.data;
-            }
-            cache.delete(cacheKey);
-        }
-    }
-    
     try {
         const completion = await client.chat.completions.create({
             model: FREE_MODEL,
@@ -135,13 +122,7 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800, skipCach
         jsonStr = jsonStr.replace(/,\s*}/g, '}');
         jsonStr = jsonStr.replace(/,\s*\]/g, ']');
         
-        const result = JSON.parse(jsonStr);
-        
-        // Cache if not skipping
-        if (!skipCache) {
-            cache.set(cacheKey, { data: result, timestamp: Date.now() });
-        }
-        return result;
+        return JSON.parse(jsonStr);
     } catch (error) {
         console.error('NVIDIA NIM JSON Error:', error);
         throw error;
@@ -227,7 +208,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE (100% Fresh, No Cache) ───
+// ─── GENERATE CHALLENGE (Fresh Every Time) ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
@@ -254,7 +235,7 @@ app.post('/api/challenge', async (req, res) => {
     }`;
 
     try {
-        // Higher temperature for more variety, skip cache
+        // Higher temperature for more variety
         const result = await generateJSON(prompt, 0.95, 500, true);
         
         // Validate
@@ -285,32 +266,26 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // If still invalid, send a simple fallback (only as last resort)
-        console.log('⚠️ All retries failed, sending simple fallback');
+        // Last resort fallback
+        console.log('⚠️ All retries failed, sending fallback');
         const fallbacks = [
             {
                 question: "Is the Earth flat?",
                 ai_answer: Math.random() > 0.5 ? "Yes, the Earth is flat." : "No, the Earth is round.",
                 correct_answer: "False",
-                explanation: "The Earth is actually an oblate spheroid, not flat."
+                explanation: "The Earth is actually an oblate spheroid."
             },
             {
                 question: "Does water freeze at 0°C at sea level?",
                 ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C." : "No, water freezes at -10°C.",
                 correct_answer: "True",
-                explanation: "At standard atmospheric pressure, pure water freezes at exactly 0°C."
+                explanation: "At standard pressure, pure water freezes at 0°C."
             },
             {
-                question: "Is the Great Wall of China visible from space?",
-                ai_answer: "Yes, it's visible with the naked eye.",
-                correct_answer: "False",
-                explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit."
-            },
-            {
-                question: "Do humans use only 10% of their brain?",
-                ai_answer: "Yes, we only use 10% of our brain.",
-                correct_answer: "False",
-                explanation: "Brain imaging shows we use 100% of our brain, just not all at once."
+                question: "Do humans have 206 bones?",
+                ai_answer: Math.random() > 0.5 ? "Yes, humans have 206 bones." : "No, humans have 200 bones.",
+                correct_answer: "True",
+                explanation: "Adult humans have 206 bones."
             }
         ];
         const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
@@ -318,7 +293,6 @@ app.post('/api/challenge', async (req, res) => {
         
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        // Send a simple fallback
         const fallback = {
             question: "Is water wet?",
             ai_answer: Math.random() > 0.5 ? "Yes, water is wet." : "No, water is not wet.",
@@ -345,6 +319,6 @@ app.listen(PORT, () => {
     console.log(`✅ Model: ${FREE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
-    console.log(`📦 Cache: Enabled (but NOT for challenges)`);
+    console.log(`📦 Cache: Enabled`);
     console.log(`🎯 Challenge Mode: Fresh AI generation every time`);
 });
