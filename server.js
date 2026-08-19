@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { OpenAI } = require('openai');
 
 const app = express();
@@ -12,7 +13,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ─── YOUR NVIDIA NIM API KEY ───
+// ─── PUBLIC FOLDER ───
+const publicPath = path.join(__dirname, 'public');
+const indexPath = path.join(publicPath, 'index.html');
+
+console.log(`📁 Public folder: ${publicPath}`);
+
+if (!fs.existsSync(publicPath)) {
+    fs.mkdirSync(publicPath, { recursive: true });
+}
+
+if (!fs.existsSync(indexPath)) {
+    const fallbackHTML = `<!DOCTYPE html>
+<html>
+<head><title>AI Lab</title></head>
+<body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
+    <div style="text-align:center;"><h1>🧠 AI Lab</h1><p>Server running ✅</p></div>
+</body>
+</html>`;
+    fs.writeFileSync(indexPath, fallbackHTML);
+}
+
+app.use(express.static(publicPath));
+
+// ─── NVIDIA NIM API KEY ───
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
 
@@ -33,14 +57,25 @@ const client = new OpenAI({
 });
 
 // ─── NVIDIA NIM FREE MODELS ───
-// Choose one of these:
-// 1. 'meta/llama-3.1-70b-instruct'  - Best quality (most credits)
-// 2. 'mistralai/mistral-large'       - Good quality
-// 3. 'meta/llama-3.2-3b-instruct'   - Faster, cheaper
 const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
+
+// ─── CACHE ───
+const cache = new Map();
+const CACHE_TTL = 3600000;
 
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
+    const cacheKey = `${prompt}-${temperature}-${maxTokens}`;
+    
+    if (cache.has(cacheKey)) {
+        const cached = cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            console.log('📦 Cached response');
+            return cached.data;
+        }
+        cache.delete(cacheKey);
+    }
+    
     try {
         const completion = await client.chat.completions.create({
             model: FREE_MODEL,
@@ -48,7 +83,9 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
             temperature: temperature,
             max_tokens: maxTokens,
         });
-        return completion.choices[0].message.content;
+        const result = completion.choices[0].message.content;
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
     } catch (error) {
         console.error('NVIDIA NIM API Error:', error);
         throw error;
@@ -57,6 +94,17 @@ async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
 
 // ─── HELPER: Generate JSON ───
 async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
+    const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
+    
+    if (cache.has(cacheKey)) {
+        const cached = cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            console.log('📦 Cached JSON');
+            return cached.data;
+        }
+        cache.delete(cacheKey);
+    }
+    
     try {
         const completion = await client.chat.completions.create({
             model: FREE_MODEL,
@@ -66,15 +114,29 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
         });
         const text = completion.choices[0].message.content;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
+        let result;
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            result = JSON.parse(jsonMatch[0]);
+        } else {
+            result = JSON.parse(text);
         }
-        return JSON.parse(text);
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
     } catch (error) {
         console.error('NVIDIA NIM JSON Error:', error);
         throw error;
     }
 }
+
+// ─── CLEAN CACHE ───
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+        if (now - value.timestamp > CACHE_TTL) {
+            cache.delete(key);
+        }
+    }
+}, 60000);
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
@@ -85,7 +147,8 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         apiKeySet: keyValid,
         provider: 'NVIDIA NIM',
-        model: FREE_MODEL
+        model: FREE_MODEL,
+        cacheSize: cache.size
     });
 });
 
@@ -144,47 +207,115 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE (Mixed True/False) ───
+// ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
     const prompt = `Generate a tricky trivia question about a common misconception OR a well-known fact.
-    
-    IMPORTANT: The answer should SOMETIMES be TRUE and SOMETIMES be FALSE - mix it up!
+
+    The question should be interesting and not too obvious.
+
+    For the CORRECT ANSWER, you MUST use the actual correct answer (True or False) based on real facts.
+    Do NOT make up facts. Only use information you are 100% certain about.
+    If you are unsure about any fact, do NOT use it.
+
+    The AI should give a confident answer that can be EITHER correct OR incorrect (mix it up!).
     - About 50% of the time the AI should give a CORRECT answer
-    - About 50% of the time the AI should give an INCORRECT answer (hallucination)
-    
-    The AI should deliver the answer confidently regardless of whether it's correct or not.
-    
-    Return strictly as JSON with these fields:
+    - About 50% of the time the AI should give an INCORRECT answer
+
+    For the explanation, clearly explain WHY the AI is right or wrong based on verified facts.
+
+    IMPORTANT RULES:
+    1. The "correct_answer" field MUST be the TRUE factual answer
+    2. The "ai_answer" field can be either true OR false (your choice, mix it up)
+    3. Only use facts you are confident about
+    4. Avoid these overused myths: 10% brain, Great Wall visible from space, bulls hate red, Napoleon was short
+
+    Return ONLY valid JSON. No markdown, no code blocks, no extra text.
+
+    Format:
     {
         "question": "The trivia question",
-        "ai_answer": "The AI's confident answer (can be true or false)",
-        "correct_answer": "The actual correct answer (True or False)",
-        "explanation": "Brief explanation of why the AI is right or wrong"
+        "ai_answer": "The AI's confident answer (can be true or false - mix it up!)",
+        "correct_answer": "True or False (MUST be the actual correct answer)",
+        "explanation": "Clear explanation with verified facts"
     }
-    
-    Examples of good questions:
-    - "Is the Great Wall of China visible from space?" (False - AI says Yes)
-    - "Do humans have more than 200 bones?" (True - AI says Yes)
-    - "Is the capital of Australia Sydney?" (False - AI says Yes)
-    - "Does water boil at 100°C at sea level?" (True - AI says Yes)
-    - "Is the Earth the largest planet in our solar system?" (False - AI says Yes)`;
+
+    Example correct format:
+    {
+        "question": "Do humans have more than 200 bones?",
+        "ai_answer": "Yes, adult humans have 206 bones.",
+        "correct_answer": "True",
+        "explanation": "Adult humans have 206 bones. This is a well-established anatomical fact."
+    }
+
+    Example incorrect format (AI hallucinating):
+    {
+        "question": "Do humans have more than 200 bones?",
+        "ai_answer": "No, humans have exactly 200 bones.",
+        "correct_answer": "True",
+        "explanation": "The AI is wrong here. Adult humans actually have 206 bones, not 200."
+    }`;
 
     try {
-        const result = await generateJSON(prompt, 0.8, 600);
-        res.json(result);
+        const result = await generateJSON(prompt, 0.8, 700);
+        
+        // Validate the response
+        if (result.question && result.ai_answer && result.correct_answer && result.explanation) {
+            // Ensure correct_answer is properly formatted
+            const correct = result.correct_answer.toLowerCase();
+            if (correct === 'true' || correct === 'false') {
+                result.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
+                res.json(result);
+                return;
+            }
+        }
+        
+        // If validation fails, try a second time with a simpler prompt
+        const retryPrompt = `Generate a simple trivia question. 
+        The question MUST be about a well-known fact. 
+        Return JSON with: question, ai_answer (can be true or false), correct_answer (must be "True" or "False"), explanation.
+        Use a random true/false mix.
+        Example: { "question": "Is the Earth flat?", "ai_answer": "Yes, the Earth is flat.", "correct_answer": "False", "explanation": "The Earth is actually an oblate spheroid." }`;
+        
+        const retryResult = await generateJSON(retryPrompt, 0.8, 500);
+        if (retryResult.question && retryResult.ai_answer && retryResult.correct_answer && retryResult.explanation) {
+            const correct = retryResult.correct_answer.toLowerCase();
+            if (correct === 'true' || correct === 'false') {
+                retryResult.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
+                res.json(retryResult);
+                return;
+            }
+        }
+        
+        // If still invalid, return a simple known fact as fallback
+        res.json({
+            question: "Does water freeze at 0°C (32°F) at sea level?",
+            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
+            correct_answer: "True",
+            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
+        });
+        
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        res.status(500).json({ error: error.message || 'Failed to generate challenge' });
+        // Return a simple known fact as fallback
+        res.json({
+            question: "Does water freeze at 0°C (32°F) at sea level?",
+            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
+            correct_answer: "True",
+            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
+        });
     }
 });
 
 // ─── SERVE INDEX.HTML ───
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(indexPath);
 });
 
 // ─── START SERVER ───
@@ -195,4 +326,6 @@ app.listen(PORT, () => {
     console.log(`✅ Model: ${FREE_MODEL}`);
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
+    console.log(`📦 Cache: Enabled`);
+    console.log(`🎯 Challenge Mode: AI-generated with validation`);
 });
