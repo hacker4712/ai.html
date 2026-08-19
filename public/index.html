@@ -569,8 +569,6 @@
             color: var(--text-primary);
         }
 
-        /* Removed score-badge styles */
-
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -598,7 +596,7 @@
             border-color: rgba(255, 198, 43, 0.3);
         }
 
-        /* ── X-Ray Claims ── */
+        /* ── X-Ray Claims with Sources ── */
         .xray-claims {
             display: flex;
             flex-direction: column;
@@ -668,14 +666,28 @@
             margin-top: 0.3rem;
             padding-left: 2.3rem;
         }
-        .xray-claim .source-tag {
+        .xray-claim .source-link {
             font-family: var(--font-mono);
             font-size: 0.6rem;
-            padding: 0.1rem 0.6rem;
+            padding: 0.15rem 0.7rem;
             border-radius: 1rem;
             background: rgba(46, 204, 113, 0.1);
             border: 1px solid rgba(46, 204, 113, 0.2);
             color: var(--green);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .xray-claim .source-link:hover {
+            background: rgba(46, 204, 113, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(46, 204, 113, 0.1);
+            color: #55efc4;
+        }
+        .xray-claim .source-link .link-icon {
+            font-size: 0.65rem;
         }
         .sources-label {
             font-family: var(--font-mono);
@@ -1148,13 +1160,13 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- LAB PAGE -->
+    <!-- LAB PAGE (UPDATED WITH SOURCES) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-lab">
         <div class="wrap">
             <span class="eyebrow">Interactive Lab</span>
             <h2>AI Hallucination Lab</h2>
-            <p class="lede">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated.</p>
+            <p class="lede">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated. <strong>Supported claims include sources with clickable links.</strong></p>
 
             <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center;">
                 <span id="api-status" class="status-badge checking">⏳ Connecting...</span>
@@ -1264,7 +1276,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- TEAM PAGE (UPDATED) -->
+    <!-- TEAM PAGE -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-team" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);">
         <div class="wrap">
@@ -1451,20 +1463,71 @@
             const labClaims = document.getElementById('lab-claims');
             const labCorrection = document.getElementById('lab-correction');
             const xrayBtn = document.getElementById('xray-btn');
-            const scoreEl = document.getElementById('user-score');
-            const caughtEl = document.getElementById('caught-count');
             const customInput = document.getElementById('custom-question');
             const askBtn = document.getElementById('ask-btn');
             const apiStatus = document.getElementById('api-status');
 
             let currentQuestion = '';
             let currentAnswer = '';
-            let score = 0,
-                caught = 0,
-                dashQ = 0,
+            let dashQ = 0,
                 dashC = 0,
                 dashU = 0;
 
+            // ─── SOURCE DATABASE WITH LINKS ───
+            const sourceDatabase = {
+                'edison invented': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                    { title: 'Edison Papers Project - Rutgers University', url: 'https://edison.rutgers.edu/' }
+                ],
+                'light bulb': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                    { title: 'Smithsonian - The Electric Light System', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' }
+                ],
+                '1879': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' }
+                ],
+                'shark bones': [
+                    { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' },
+                    { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' }
+                ],
+                'shark': [
+                    { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' }
+                ],
+                'einstein': [
+                    { title: 'Albert Einstein Archives - Early Education', url: 'https://www.albert-einstein.org/education.html' },
+                    { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' }
+                ],
+                'mount everest': [
+                    { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' },
+                    { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' }
+                ],
+                'tallest mountain': [
+                    { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' }
+                ],
+                'australia capital': [
+                    { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' },
+                    { title: 'Parliament of Australia - Canberra', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' }
+                ],
+                'sydney': [
+                    { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' }
+                ]
+            };
+
+            function getSourcesForClaim(claimText) {
+                const lowerClaim = claimText.toLowerCase();
+                for (const [key, sources] of Object.entries(sourceDatabase)) {
+                    if (lowerClaim.includes(key) || key.includes(lowerClaim)) {
+                        return sources;
+                    }
+                }
+                // Default sources if no match
+                return [
+                    { title: 'Wikipedia - AI Hallucination', url: 'https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)' },
+                    { title: 'OpenAI Research Papers', url: 'https://openai.com/research' }
+                ];
+            }
+
+            // ── API HELPER ──
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
                 try {
@@ -1517,24 +1580,6 @@
                 }
             }
 
-            function getSourcesForClaim(claimText) {
-                const sources = {
-                    'Edison invented the light bulb': ['US Patent 223,898 (1880)', 'Edison Papers Project'],
-                    'in 1879': ['US Patent 223,898 (1880)'],
-                    'Sharks have 206 bones': ['NOAA Fisheries'],
-                    'Einstein failed mathematics': ['Albert Einstein Archives'],
-                    'Mount Everest is the tallest mountain': ['USGS Elevation Data'],
-                    'The capital of Australia is Sydney': ['Australian Government Geoscience']
-                };
-                for (const [key, value] of Object.entries(sources)) {
-                    if (claimText.toLowerCase().includes(key.toLowerCase()) ||
-                        key.toLowerCase().includes(claimText.toLowerCase())) {
-                        return value;
-                    }
-                }
-                return ['Wikipedia:AI Hallucination', 'OpenAI Research Papers'];
-            }
-
             async function askAI(question) {
                 if (!question) return;
                 currentQuestion = question;
@@ -1557,6 +1602,7 @@
                 }
             }
 
+            // ── X-RAY WITH SOURCES ──
             xrayBtn.addEventListener('click', async function() {
                 if (!currentQuestion || !currentAnswer) return;
                 labXray.style.display = 'block';
@@ -1586,6 +1632,7 @@
                         header.appendChild(t);
                         d.appendChild(header);
 
+                        // ─── ADD SOURCES WITH LINKS ───
                         if (c.status === 'supported') {
                             const sourcesDiv = document.createElement('div');
                             sourcesDiv.className = 'sources';
@@ -1593,15 +1640,19 @@
                             label.className = 'sources-label';
                             label.textContent = '📚 Sources:';
                             sourcesDiv.appendChild(label);
-                            const sourceList = getSourcesForClaim(c.text);
-                            sourceList.forEach(src => {
-                                const tag = document.createElement('span');
-                                tag.className = 'source-tag';
-                                tag.textContent = src;
-                                sourcesDiv.appendChild(tag);
+
+                            const sources = getSourcesForClaim(c.text);
+                            sources.forEach(src => {
+                                const link = document.createElement('a');
+                                link.href = src.url;
+                                link.target = '_blank';
+                                link.className = 'source-link';
+                                link.innerHTML = `<span class="link-icon">🔗</span> ${src.title}`;
+                                sourcesDiv.appendChild(link);
                             });
                             d.appendChild(sourcesDiv);
                         }
+
                         labClaims.appendChild(d);
                         if (c.status === 'unsupported') unsupportedCount++;
                     });
@@ -1611,10 +1662,6 @@
                     if (unsupportedCount > 0) {
                         const total = claims.length;
                         const correct = total - unsupportedCount;
-                        const earned = Math.round((correct / total) * 100);
-                        score += earned;
-                        caught += unsupportedCount;
-                        // Score display removed - keeping variables for internal tracking
                         dashQ++;
                         dashC += total;
                         dashU += unsupportedCount;
@@ -1726,11 +1773,6 @@
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
                         result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
                         revealDiv.style.display = 'block';
-
-                        if (isCorrect) {
-                            score += 15;
-                            // Score tracking kept internally
-                        }
 
                         btns.forEach(b => {
                             const v = b.dataset.choice === 'true';
