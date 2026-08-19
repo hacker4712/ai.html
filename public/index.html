@@ -284,10 +284,7 @@
             align-items: start;
         }
         @media (max-width: 920px) {
-            .hero-grid {
-                grid-template-columns: 1fr;
-                gap: 2.5rem;
-            }
+            .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
         }
         .hero h1 .wrong {
             background: linear-gradient(135deg, var(--accent), #ff6b83);
@@ -572,22 +569,8 @@
             color: var(--text-primary);
         }
 
-        .score-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.3rem 1.1rem;
-            border-radius: 2rem;
-            border: 1px solid var(--border);
-        }
-        .score-badge .num {
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
+        /* Removed score-badge styles */
+
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -908,7 +891,7 @@
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.6rem;
+            padding: 1.8rem;
             text-align: center;
             transition: all var(--transition);
         }
@@ -918,27 +901,39 @@
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
         }
         .team-card .icon-wrap {
-            width: 3rem;
-            height: 3rem;
+            width: 3.5rem;
+            height: 3.5rem;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.04);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 0.8rem;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             transition: transform var(--transition);
+            border: 1px solid var(--border);
         }
         .team-card:hover .icon-wrap {
             transform: scale(1.1) rotate(-4deg);
+            border-color: var(--accent);
         }
-        .team-card h3 {
-            font-size: 0.95rem;
+        .team-card .member-name {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
             font-weight: 600;
+            color: var(--text-primary);
             margin-bottom: 0.2rem;
         }
+        .team-card .member-role {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
         .team-card p {
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             color: var(--text-secondary);
         }
 
@@ -1162,8 +1157,6 @@
             <p class="lede">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated.</p>
 
             <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center;">
-                <span class="score-badge">🏆 Score: <span class="num" id="user-score">0</span></span>
-                <span class="score-badge">✅ Caught: <span class="num" id="caught-count">0</span></span>
                 <span id="api-status" class="status-badge checking">⏳ Connecting...</span>
             </div>
 
@@ -1271,19 +1264,49 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- TEAM PAGE -->
+    <!-- TEAM PAGE (UPDATED) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-team" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);">
         <div class="wrap">
             <span class="eyebrow gold">The Team</span>
             <h2>Six roles, one project</h2>
             <div class="team-grid">
-                <div class="team-card"><div class="icon-wrap">🔍</div><h3>Research Lead</h3><p>Researches hallucination causes and real case studies.</p></div>
-                <div class="team-card"><div class="icon-wrap">✍️</div><h3>Script Writer</h3><p>Writes the spoken script and judge Q&amp;A.</p></div>
-                <div class="team-card"><div class="icon-wrap">📊</div><h3>PPT Designer</h3><p>Builds the exhibition slide deck.</p></div>
-                <div class="team-card"><div class="icon-wrap">💻</div><h3>Web Developer</h3><p>Codes this interactive project website.</p></div>
-                <div class="team-card"><div class="icon-wrap">🎨</div><h3>Poster Designer</h3><p>Designs the physical board and handouts.</p></div>
-                <div class="team-card"><div class="icon-wrap">📋</div><h3>Demo Lead</h3><p>Compiles the report and runs the live demo.</p></div>
+                <div class="team-card">
+                    <div class="icon-wrap">🎨</div>
+                    <div class="member-name">Prithviraj</div>
+                    <div class="member-role">Web Designer</div>
+                    <p>Designed and developed the interactive exhibition website.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">✍️</div>
+                    <div class="member-name">Naman Singh</div>
+                    <div class="member-role">Script Writer</div>
+                    <p>Wrote the spoken script and prepared the judge Q&amp;A for the stall.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">🎨</div>
+                    <div class="member-name">Rhythm Yadav</div>
+                    <div class="member-role">Illustrator</div>
+                    <p>Created illustrations, visual elements, and printed handouts for the exhibition.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">🔍</div>
+                    <div class="member-name">Lavisha Srivastava</div>
+                    <div class="member-role">Researcher</div>
+                    <p>Researched hallucination causes, sources, and real-world case studies.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">📊</div>
+                    <div class="member-name">Ayush Joshi</div>
+                    <div class="member-role">Investor</div>
+                    <p>Managed project resources and supported the team's vision.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">📋</div>
+                    <div class="member-name">Demo Lead</div>
+                    <div class="member-role">Documentation &amp; Demo</div>
+                    <p>Compiled the written report, runs the live demo, and coordinates the stall.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -1339,19 +1362,14 @@
             const pageTriggers = document.querySelectorAll('[data-page]');
 
             function showPage(pageId) {
-                // Hide all sections
                 Object.values(sections).forEach(s => s.classList.remove('active'));
-                // Show target
                 if (sections[pageId]) sections[pageId].classList.add('active');
-                // Update nav
                 navLinks.forEach(link => {
                     link.classList.toggle('active', link.dataset.page === pageId);
                 });
-                // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
-            // Nav clicks
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1359,7 +1377,6 @@
                 });
             });
 
-            // Other triggers (buttons with data-page)
             pageTriggers.forEach(el => {
                 if (el.tagName !== 'A' || !el.classList.contains('nav')) {
                     el.addEventListener('click', function(e) {
@@ -1597,8 +1614,7 @@
                         const earned = Math.round((correct / total) * 100);
                         score += earned;
                         caught += unsupportedCount;
-                        scoreEl.textContent = score;
-                        caughtEl.textContent = caught;
+                        // Score display removed - keeping variables for internal tracking
                         dashQ++;
                         dashC += total;
                         dashU += unsupportedCount;
@@ -1713,7 +1729,7 @@
 
                         if (isCorrect) {
                             score += 15;
-                            scoreEl.textContent = score;
+                            // Score tracking kept internally
                         }
 
                         btns.forEach(b => {
