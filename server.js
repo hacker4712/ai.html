@@ -207,64 +207,54 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE ───
+// ─── GENERATE CHALLENGE (100% AI Generated, No Fallbacks) ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    const prompt = `Generate a tricky trivia question about a common misconception OR a well-known fact.
-
-    The question should be interesting and not too obvious.
-
-    For the CORRECT ANSWER, you MUST use the actual correct answer (True or False) based on real facts.
-    Do NOT make up facts. Only use information you are 100% certain about.
-    If you are unsure about any fact, do NOT use it.
-
-    The AI should give a confident answer that can be EITHER correct OR incorrect (mix it up!).
-    - About 50% of the time the AI should give a CORRECT answer
-    - About 50% of the time the AI should give an INCORRECT answer
-
-    For the explanation, clearly explain WHY the AI is right or wrong based on verified facts.
+    const prompt = `Generate a unique, interesting trivia question about a common misconception OR a well-known fact.
 
     IMPORTANT RULES:
-    1. The "correct_answer" field MUST be the TRUE factual answer
-    2. The "ai_answer" field can be either true OR false (your choice, mix it up)
-    3. Only use facts you are confident about
-    4. Avoid these overused myths: 10% brain, Great Wall visible from space, bulls hate red, Napoleon was short
+    1. The question MUST be about something that has a clear TRUE or FALSE answer
+    2. The "correct_answer" MUST be the actual factual answer (True or False)
+    3. The "ai_answer" can be EITHER true OR false (mix it up randomly!)
+    4. The explanation MUST clearly explain WHY the AI is right or wrong
+    5. NEVER repeat the same question - be creative and unique
+    6. Avoid these overused topics: 10% brain, Great Wall visible from space, bulls hate red, Napoleon was short
 
     Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 
     Format:
     {
         "question": "The trivia question",
-        "ai_answer": "The AI's confident answer (can be true or false - mix it up!)",
+        "ai_answer": "The AI's confident answer (can be True or False - choose randomly!)",
         "correct_answer": "True or False (MUST be the actual correct answer)",
         "explanation": "Clear explanation with verified facts"
     }
 
-    Example correct format:
+    Example (correct answer):
     {
-        "question": "Do humans have more than 200 bones?",
-        "ai_answer": "Yes, adult humans have 206 bones.",
+        "question": "Do adult humans have 206 bones?",
+        "ai_answer": "Yes, adult humans have exactly 206 bones.",
         "correct_answer": "True",
         "explanation": "Adult humans have 206 bones. This is a well-established anatomical fact."
     }
 
-    Example incorrect format (AI hallucinating):
+    Example (hallucination - AI is wrong):
     {
-        "question": "Do humans have more than 200 bones?",
-        "ai_answer": "No, humans have exactly 200 bones.",
+        "question": "Do adult humans have 206 bones?",
+        "ai_answer": "No, adult humans have 200 bones.",
         "correct_answer": "True",
-        "explanation": "The AI is wrong here. Adult humans actually have 206 bones, not 200."
+        "explanation": "The AI is wrong. Adult humans actually have 206 bones, not 200."
     }`;
 
     try {
-        const result = await generateJSON(prompt, 0.8, 700);
+        const result = await generateJSON(prompt, 0.9, 700);
         
-        // Validate the response
+        // Validate the response has all required fields
         if (result.question && result.ai_answer && result.correct_answer && result.explanation) {
-            // Ensure correct_answer is properly formatted
+            // Ensure correct_answer is properly formatted as "True" or "False"
             const correct = result.correct_answer.toLowerCase();
             if (correct === 'true' || correct === 'false') {
                 result.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
@@ -273,14 +263,12 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // If validation fails, try a second time with a simpler prompt
-        const retryPrompt = `Generate a simple trivia question. 
-        The question MUST be about a well-known fact. 
-        Return JSON with: question, ai_answer (can be true or false), correct_answer (must be "True" or "False"), explanation.
-        Use a random true/false mix.
-        Example: { "question": "Is the Earth flat?", "ai_answer": "Yes, the Earth is flat.", "correct_answer": "False", "explanation": "The Earth is actually an oblate spheroid." }`;
+        // If invalid format, try once more with simpler prompt
+        const retryPrompt = `Generate a simple trivia question with a True or False answer.
+        Return JSON: { "question": "...", "ai_answer": "...", "correct_answer": "True or False", "explanation": "..." }`;
         
-        const retryResult = await generateJSON(retryPrompt, 0.8, 500);
+        const retryResult = await generateJSON(retryPrompt, 0.8, 400);
+        
         if (retryResult.question && retryResult.ai_answer && retryResult.correct_answer && retryResult.explanation) {
             const correct = retryResult.correct_answer.toLowerCase();
             if (correct === 'true' || correct === 'false') {
@@ -290,23 +278,12 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // If still invalid, return a simple known fact as fallback
-        res.json({
-            question: "Does water freeze at 0°C (32°F) at sea level?",
-            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-            correct_answer: "True",
-            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
-        });
+        // If still invalid, return error (no fallback)
+        res.status(500).json({ error: 'Failed to generate valid challenge format. Please try again.' });
         
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        // Return a simple known fact as fallback
-        res.json({
-            question: "Does water freeze at 0°C (32°F) at sea level?",
-            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-            correct_answer: "True",
-            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
-        });
+        res.status(500).json({ error: error.message || 'Failed to generate challenge. Please try again.' });
     }
 });
 
@@ -327,5 +304,5 @@ app.listen(PORT, () => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
     console.log(`📦 Cache: Enabled`);
-    console.log(`🎯 Challenge Mode: AI-generated with validation`);
+    console.log(`🎯 Challenge Mode: 100% AI Generated (No fallbacks)`);
 });
