@@ -34,7 +34,15 @@ if (!fs.existsSync(indexPath)) {
     fs.writeFileSync(indexPath, fallbackHTML);
 }
 
-app.use(express.static(publicPath));
+// ─── SERVE SCANNER.JS ───
+app.get('/scanner.js', (req, res) => {
+    const scannerPath = path.join(__dirname, 'public', 'scanner.js');
+    if (fs.existsSync(scannerPath)) {
+        res.sendFile(scannerPath);
+    } else {
+        res.status(404).json({ error: 'scanner.js not found' });
+    }
+});
 
 // ─── NVIDIA NIM API KEY ───
 const HARDCODED_KEY = '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';
@@ -106,11 +114,9 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800, skipCach
         
         // Try to extract JSON
         let jsonStr = text;
-        // Remove markdown code blocks
         jsonStr = jsonStr.replace(/```json\s*/g, '');
         jsonStr = jsonStr.replace(/```\s*/g, '');
         
-        // Find first { and last }
         const firstBrace = jsonStr.indexOf('{');
         const lastBrace = jsonStr.lastIndexOf('}');
         
@@ -118,7 +124,6 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800, skipCach
             jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
         }
         
-        // Clean up
         jsonStr = jsonStr.replace(/,\s*}/g, '}');
         jsonStr = jsonStr.replace(/,\s*\]/g, ']');
         
@@ -138,6 +143,10 @@ setInterval(() => {
         }
     }
 }, 60000);
+
+// ════════════════════════════════════════════════
+//  API ROUTES
+// ════════════════════════════════════════════════
 
 // ─── HEALTH CHECK ───
 app.get('/api/health', (req, res) => {
@@ -208,7 +217,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE (Fresh Every Time) ───
+// ─── GENERATE CHALLENGE ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
@@ -235,10 +244,8 @@ app.post('/api/challenge', async (req, res) => {
     }`;
 
     try {
-        // Higher temperature for more variety
         const result = await generateJSON(prompt, 0.95, 500, true);
         
-        // Validate
         if (result.question && result.ai_answer && result.correct_answer && result.explanation) {
             const correct = result.correct_answer.toLowerCase();
             if (correct === 'true' || correct === 'false') {
@@ -249,7 +256,6 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // If invalid format, try again with simpler prompt
         console.log('⚠️ Invalid format, retrying...');
         const retryPrompt = `Create a simple True/False trivia question.
         Return JSON: { "question": "...", "ai_answer": "...", "correct_answer": "True or False", "explanation": "..." }`;
@@ -266,7 +272,6 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // Last resort fallback
         console.log('⚠️ All retries failed, sending fallback');
         const fallbacks = [
             {
@@ -321,4 +326,5 @@ app.listen(PORT, () => {
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
     console.log(`📦 Cache: Enabled`);
     console.log(`🎯 Challenge Mode: Fresh AI generation every time`);
+    console.log(`🔍 Scanner: Enabled at /scanner.js`);
 });
