@@ -1,331 +1,1847 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const { OpenAI } = require('openai');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confidently Wrong · AI Hallucination Lab</title>
+    <meta name="description" content="Class 12 science exhibition — celebrating mistakes through AI hallucination." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        /* ── reset & base ── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        :root {
+            --bg: #0b0b14;
+            --bg-card: #13131f;
+            --bg-elevated: #1b1b2e;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.14);
+            --text-primary: #f0edf6;
+            --text-secondary: #b4b0cc;
+            --text-muted: #6f6b87;
+            --accent: #ff3b5c;
+            --accent-glow: rgba(255, 59, 92, 0.3);
+            --gold: #ffc62b;
+            --gold-glow: rgba(255, 198, 43, 0.2);
+            --green: #2ecc71;
+            --green-glow: rgba(46, 204, 113, 0.2);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --font-display: 'Fraunces', serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --max-width: 1180px;
+            --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .wrap {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 1.75rem;
+        }
+        section {
+            padding: 5rem 0;
+            position: relative;
+            display: none;
+        }
+        section.active {
+            display: block;
+        }
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent);
+            display: inline-block;
+            padding: 0.25rem 0.9rem;
+            border-radius: 2rem;
+            background: rgba(255, 59, 92, 0.08);
+            margin-bottom: 0.9rem;
+            border: 1px solid rgba(255, 59, 92, 0.08);
+        }
+        .eyebrow.gold {
+            color: var(--gold);
+            background: rgba(255, 198, 43, 0.08);
+            border-color: rgba(255, 198, 43, 0.08);
+        }
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 7.2vw, 4.8rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.04;
+        }
+        h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+            max-width: 720px;
+        }
+        .lede {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-top: 1rem;
+            line-height: 1.7;
+        }
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.04em;
+            padding: 0.6rem 1.4rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #ff6b83);
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+        .btn-primary:disabled {
+            opacity: 0.3;
+            cursor: default;
+            transform: none !important;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+        .error-msg {
+            color: var(--accent);
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 59, 92, 0.08);
+            border-left: 3px solid var(--accent);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+        /* ── Particles ── */
+        #particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        #particles span {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--accent-glow);
+            opacity: 0.12;
+            animation: floatParticle linear infinite;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0.3); opacity: 0; }
+            12% { opacity: 0.12; }
+            88% { opacity: 0.12; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+        /* ── Navigation ── */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            background: rgba(11, 11, 20, 0.72);
+            backdrop-filter: blur(18px) saturate(1.6);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 3.8rem;
+            gap: 1.2rem;
+        }
+        .nav .brand {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+        }
+        .nav .brand .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.25; transform: scale(0.7); }
+        }
+        .nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.8rem;
+            margin: 0;
+            padding: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav ul::-webkit-scrollbar {
+            display: none;
+        }
+        .nav a {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            padding: 0.3rem 0;
+            border-bottom: 2px solid transparent;
+            transition: color 0.3s ease, border-color 0.3s ease;
+            white-space: nowrap;
+            position: relative;
+            cursor: pointer;
+        }
+        .nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.35s ease;
+        }
+        .nav a:hover::after,
+        .nav a.active::after {
+            width: 100%;
+        }
+        .nav a:hover,
+        .nav a.active {
+            color: var(--text-primary);
+        }
 
-// ─── PUBLIC FOLDER ───
-const publicPath = path.join(__dirname, 'public');
-const indexPath = path.join(publicPath, 'index.html');
+        /* ── Hero ── */
+        .hero {
+            padding: 5rem 0 4.5rem;
+            background: radial-gradient(ellipse at 70% 20%, rgba(255, 59, 92, 0.05), transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(108, 92, 231, 0.04), transparent 50%), var(--bg);
+            position: relative;
+            overflow: hidden;
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+        }
+        .hero .wrap {
+            position: relative;
+            z-index: 2;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 3.5rem;
+            align-items: start;
+        }
+        @media (max-width: 920px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+        }
+        .hero h1 .wrong {
+            background: linear-gradient(135deg, var(--accent), #ff6b83);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-style: italic;
+        }
+        .hero .sub {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 34rem;
+            margin-top: 1.2rem;
+            line-height: 1.7;
+        }
+        .hero .cue {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 2.4rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            padding: 0.6rem 1.6rem;
+            border-radius: 3rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            transition: all var(--transition);
+            cursor: pointer;
+        }
+        .hero .cue:hover {
+            background: rgba(255, 59, 92, 0.08);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(255, 59, 92, 0.08);
+        }
+        .hero .cue .icon {
+            width: 0.9rem;
+            height: 0.9rem;
+            animation: bob 2.4s ease-in-out infinite;
+        }
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+        }
 
-console.log(`📁 Public folder: ${publicPath}`);
+        .terminal {
+            background: rgba(19, 19, 31, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.6rem 1.7rem 1.8rem;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        .terminal:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+        }
+        .terminal .dots {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+        }
+        .terminal .dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+        .terminal .dots span:nth-child(1) { background: var(--accent); }
+        .terminal .dots span:nth-child(2) { background: var(--gold); }
+        .terminal .dots span:nth-child(3) { background: var(--green); }
+        .terminal .dots span:hover { transform: scale(1.25); }
+        .terminal .qline,
+        .terminal .aline {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            line-height: 1.65;
+        }
+        .terminal .tag {
+            color: var(--gold);
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        .terminal .qline {
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+        .terminal .aline {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            min-height: 1.65em;
+            white-space: pre-wrap;
+        }
+        .typecursor {
+            display: inline-block;
+            width: 0.5em;
+            height: 1.2em;
+            background: var(--accent);
+            animation: blink 0.8s steps(1) infinite;
+            vertical-align: text-bottom;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
 
-if (!fs.existsSync(publicPath)) {
-    fs.mkdirSync(publicPath, { recursive: true });
-}
+        .flag {
+            display: flex;
+            gap: 0.8rem;
+            align-items: flex-start;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            margin-top: 0.2rem;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .flag.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .flag .flag-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: rgba(255, 59, 92, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: none;
+        }
+        .flag .flag-icon svg {
+            width: 1rem;
+            height: 1rem;
+            color: var(--accent);
+        }
+        .flag-title {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .flag-body {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
 
-if (!fs.existsSync(indexPath)) {
-    const fallbackHTML = `<!DOCTYPE html>
-<html>
-<head><title>AI Lab</title></head>
-<body style="background:#0b0b14;color:#f0edf6;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
-    <div style="text-align:center;"><h1>🧠 AI Lab</h1><p>Server running ✅</p></div>
+        .confidence {
+            margin-top: 1.1rem;
+        }
+        .confidence .label {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+        .confidence .label b {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .confidence .track {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .confidence .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ff6b83);
+            width: 0;
+            border-radius: 1rem;
+            transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        .confidence .fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+            animation: shimmer 2.4s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* ── Lab Section ── */
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 2.5rem;
+            margin-top: 2.5rem;
+        }
+        @media (max-width: 920px) {
+            .lab-grid { grid-template-columns: 1fr; }
+        }
+        .lab-input-wrap {
+            display: flex;
+            gap: 0.7rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .lab-input-wrap input {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .lab-input-wrap input::placeholder {
+            color: var(--text-muted);
+        }
+        .lab-input-wrap input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        .lab-input-wrap button {
+            padding: 0.7rem 1.6rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent), #ff6b83);
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .lab-input-wrap button:hover:not(:disabled) {
+            transform: scale(1.04);
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+        .lab-input-wrap button:active {
+            transform: scale(0.96);
+        }
+        .lab-input-wrap button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.6rem 0 0.8rem;
+        }
+        .chip {
+            padding: 0.35rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .chip:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        .chip.active {
+            background: rgba(255, 59, 92, 0.12);
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 1.1rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            border: 1px solid var(--border);
+        }
+        .status-badge.online {
+            background: var(--green-glow);
+            color: var(--green);
+            border-color: rgba(46, 204, 113, 0.3);
+        }
+        .status-badge.offline {
+            background: rgba(255, 59, 92, 0.12);
+            color: var(--accent);
+            border-color: rgba(255, 59, 92, 0.3);
+        }
+        .status-badge.checking {
+            background: var(--gold-glow);
+            color: var(--gold);
+            border-color: rgba(255, 198, 43, 0.3);
+        }
+
+        /* ── X-Ray Claims with Sources for ALL Claims ── */
+        .xray-claims {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin: 0.8rem 0;
+        }
+        .xray-claim {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid transparent;
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        .xray-claim:nth-child(1) { animation-delay: 0.05s; }
+        .xray-claim:nth-child(2) { animation-delay: 0.12s; }
+        .xray-claim:nth-child(3) { animation-delay: 0.19s; }
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .xray-claim .claim-header {
+            display: flex;
+            gap: 0.7rem;
+            align-items: flex-start;
+        }
+        .xray-claim .badge {
+            flex: none;
+            font-family: var(--font-mono);
+            font-size: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0.15rem 0.6rem;
+            border-radius: 1rem;
+            white-space: nowrap;
+            margin-top: 0.1rem;
+        }
+        .badge.supported {
+            background: var(--green-glow);
+            color: var(--green);
+        }
+        .badge.context {
+            background: var(--gold-glow);
+            color: var(--gold);
+        }
+        .badge.unsupported {
+            background: rgba(255, 59, 92, 0.15);
+            color: var(--accent);
+        }
+        .xray-claim .text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+        .xray-claim .text .explain {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+        /* ── SOURCES FOR ALL CLAIMS ── */
+        .xray-claim .sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.3rem;
+            padding-left: 2.3rem;
+        }
+        .xray-claim .source-link {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            padding: 0.15rem 0.7rem;
+            border-radius: 1rem;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+            color: var(--green);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .xray-claim .source-link:hover {
+            background: rgba(46, 204, 113, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(46, 204, 113, 0.1);
+            color: #55efc4;
+        }
+        .xray-claim .source-link .link-icon {
+            font-size: 0.65rem;
+        }
+        .xray-claim .source-link.unsupported-source {
+            background: rgba(255, 59, 92, 0.1);
+            border-color: rgba(255, 59, 92, 0.2);
+            color: var(--accent);
+        }
+        .xray-claim .source-link.unsupported-source:hover {
+            background: rgba(255, 59, 92, 0.2);
+            color: #ff6b83;
+        }
+        .sources-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-right: 0.3rem;
+        }
+
+        /* ── Challenge ── */
+        .challenge-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .challenge-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.8rem;
+            transition: all var(--transition);
+            cursor: default;
+        }
+        .challenge-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+        .challenge-card .status {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.08em;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            display: inline-block;
+            margin-bottom: 0.7rem;
+        }
+        .status.pending {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+        }
+        .status.correct {
+            background: var(--green-glow);
+            color: var(--green);
+        }
+        .status.wrong {
+            background: rgba(255, 59, 92, 0.12);
+            color: var(--accent);
+        }
+        .challenge-card .options {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.9rem;
+        }
+        .challenge-card .options button {
+            flex: 1;
+            padding: 0.45rem 0.4rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .challenge-card .options button:hover:not(:disabled) {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .challenge-card .options button:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .challenge-card .options button.correct-choice {
+            border-color: var(--green);
+            background: var(--green-glow);
+            color: var(--green);
+        }
+        .challenge-card .options button.wrong-choice {
+            border-color: var(--accent);
+            background: rgba(255, 59, 92, 0.1);
+            color: var(--accent);
+        }
+        .result-text {
+            margin-top: 0.8rem;
+            font-size: 0.82rem;
+            padding: 0.5rem 0.7rem;
+            border-radius: var(--radius-sm);
+            animation: slideIn 0.4s ease forwards;
+        }
+        .result-text.correct {
+            background: var(--green-glow);
+            color: var(--green);
+        }
+        .result-text.wrong {
+            background: rgba(255, 59, 92, 0.08);
+            color: var(--accent);
+        }
+        .reveal-answer {
+            margin-top: 0.8rem;
+            padding: 0.6rem 0.8rem;
+            background: var(--green-glow);
+            border-radius: var(--radius-sm);
+            display: none;
+        }
+        .reveal-answer.show {
+            display: block;
+        }
+        .reveal-answer .label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--green);
+            font-weight: 700;
+        }
+        .reveal-answer p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+        .api-message {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            display: none;
+        }
+        .api-message.show {
+            display: block;
+        }
+
+        /* ── Cases ── */
+        .case-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+        @media (max-width: 860px) {
+            .case-grid { grid-template-columns: 1fr; }
+        }
+        .case-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.8rem;
+            border-left: 4px solid var(--accent);
+            transition: all var(--transition);
+        }
+        .case-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+        .case-card .tag {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .case-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .case-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .case-card .stat {
+            border-top: 1px solid var(--border);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .case-card .stat .num {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .case-card .stat .sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Team ── */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+        @media (max-width: 860px) {
+            .team-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+            .team-grid { grid-template-columns: 1fr; }
+        }
+        .team-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.8rem;
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .team-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+        }
+        .team-card .icon-wrap {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.8rem;
+            font-size: 1.5rem;
+            transition: transform var(--transition);
+            border: 1px solid var(--border);
+        }
+        .team-card:hover .icon-wrap {
+            transform: scale(1.1) rotate(-4deg);
+            border-color: var(--accent);
+        }
+        .team-card .member-name {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.2rem;
+        }
+        .team-card .member-role {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+        .team-card p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── Flow (Celebrate) ── */
+        .flow-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.2rem;
+            margin: 1.5rem 0;
+        }
+        @media (max-width: 820px) {
+            .flow-row { grid-template-columns: 1fr; }
+        }
+        .flow-step {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.3rem;
+            transition: all var(--transition);
+        }
+        .flow-step:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-3px);
+        }
+        .flow-step h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+        }
+        .flow-step p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── Dashboard ── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 720px) {
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 0.8rem;
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-2px);
+        }
+        .stat-card .num {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-card .label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* ── Footer ── */
+        footer {
+            padding: 3.5rem 0 2.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+        footer .foot-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 2.5rem;
+        }
+        @media (max-width: 720px) {
+            footer .foot-grid { grid-template-columns: 1fr; }
+        }
+        footer h4 {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 0.7rem;
+        }
+        footer p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            max-width: 32rem;
+        }
+        footer ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        footer ul li {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+        }
+        footer ul li:hover {
+            color: var(--text-secondary);
+        }
+        footer .credit {
+            margin-top: 2rem;
+            padding-top: 1.2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #fff;
+        }
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- particles -->
+    <div id="particles"></div>
+
+    <!-- nav -->
+    <nav class="nav">
+        <div class="wrap">
+            <a href="#" class="brand" data-page="home"><span class="dot"></span>CONFIDENTLY WRONG</a>
+            <ul>
+                <li><a class="active" data-page="home">Home</a></li>
+                <li><a data-page="lab">Lab</a></li>
+                <li><a data-page="challenge">Challenge</a></li>
+                <li><a data-page="cases">Cases</a></li>
+                <li><a data-page="team">Team</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- HOME PAGE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <section id="page-home" class="active">
+        <div class="hero">
+            <div class="wrap hero-grid">
+                <div>
+                    <span class="eyebrow">Science Exhibition 2026 · Celebrating Mistakes</span>
+                    <h1>Confidently <span class="wrong">Wrong.</span></h1>
+                    <p class="sub">Every AI answer sounds certain. Not every AI answer is true. Enter the lab to see how hallucinations happen — and how to catch them.</p>
+                    <a class="cue" data-page="lab">
+                        Enter the Lab
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                    </a>
+                </div>
+                <div class="terminal" id="hero-terminal">
+                    <div class="dots"><span></span><span></span><span></span></div>
+                    <p class="qline"><span class="tag">Q:</span>"Can you see the Great Wall of China from space?"</p>
+                    <p class="aline" id="hero-answer"></p>
+                    <div class="flag" id="hero-flag">
+                        <div class="flag-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        </div>
+                        <div>
+                            <div class="flag-title">⚠️ MYTH — FLAGGED</div>
+                            <div class="flag-body">NASA confirms it isn't visible to the unaided eye — a myth the model repeats because it appears so often in its training text.</div>
+                        </div>
+                    </div>
+                    <div class="confidence">
+                        <div class="label"><span>MODEL CONFIDENCE</span><b id="hero-pct">0%</b></div>
+                        <div class="track"><div class="fill" id="hero-fill"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Celebrate Section (on Home) -->
+        <div class="wrap" style="padding-top:2rem;">
+            <span class="eyebrow gold">Celebrating Mistakes</span>
+            <h2>The mistake isn't the failure. Ignoring it is.</h2>
+            <p class="lede">History's biggest discoveries didn't happen despite the mistake — they happened because someone studied it instead of throwing it away.</p>
+            <div class="flow-row">
+                <div class="flow-step"><h4>🔬 A mistake happens</h4><p>A contaminated dish. A weak glue. An unexpected glow.</p></div>
+                <div class="flow-step"><h4>🧠 Someone studies it</h4><p>Instead of discarding it, they ask "why did this happen?"</p></div>
+                <div class="flow-step"><h4>💡 It becomes a breakthrough</h4><p>Antibiotics. Sticky notes. Medical imaging.</p></div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-step"><h4>🤖 A hallucination happens</h4><p>A fake citation. An invented policy. A wrong credit.</p></div>
+                <div class="flow-step"><h4>📝 We document it</h4><p>Every case file is data about how the error formed.</p></div>
+                <div class="flow-step"><h4>✅ It becomes safer AI</h4><p>Grounded answers, visible sources, honest uncertainty.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- LAB PAGE (UPDATED WITH SOURCES FOR ALL CLAIMS) -->
+    <!-- ════════════════════════════════════════════════ -->
+    <section id="page-lab">
+        <div class="wrap">
+            <span class="eyebrow">Interactive Lab</span>
+            <h2>AI Hallucination Lab</h2>
+            <p class="lede">Ask any question, see the AI's answer, then X‑ray it to see which claims are true, need context, or are completely fabricated. <strong>Sources with links are shown for ALL claims.</strong></p>
+
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center;">
+                <span id="api-status" class="status-badge checking">⏳ Connecting...</span>
+            </div>
+
+            <div class="lab-grid">
+                <div>
+                    <div class="lab-input-wrap">
+                        <input type="text" id="custom-question" placeholder="Type your question here…" />
+                        <button id="ask-btn">Ask AI</button>
+                    </div>
+                    <div class="chip-group">
+                        <button class="chip" data-q="Who invented the light bulb?">💡 Light bulb</button>
+                        <button class="chip" data-q="How many bones does a shark have?">🦈 Shark bones</button>
+                        <button class="chip" data-q="Did Einstein fail math in school?">🧠 Einstein math</button>
+                        <button class="chip" data-q="What's the tallest mountain, base to peak?">🏔️ Tallest mountain</button>
+                        <button class="chip" data-q="What's the capital of Australia?">🇦🇺 Australia capital</button>
+                    </div>
+                    <button class="btn btn-primary" id="xray-btn" disabled>🔬 X‑Ray This Answer</button>
+                    <div style="margin-top:0.8rem;font-size:0.65rem;color:var(--text-muted);font-family:var(--font-mono);">
+                        ⚡ Earn points by catching unsupported claims!
+                    </div>
+                </div>
+
+                <div class="terminal">
+                    <div class="dots"><span></span><span></span><span></span></div>
+                    <p class="qline"><span class="tag">Q:</span><span id="lab-q">Choose a question to begin.</span></p>
+                    <p class="aline" id="lab-a">Awaiting your question...</p>
+                    <div class="confidence" id="lab-conf" style="display:none;">
+                        <div class="label"><span>MODEL CONFIDENCE</span><b id="lab-pct">0%</b></div>
+                        <div class="track"><div class="fill" id="lab-fill"></div></div>
+                    </div>
+                    <div id="lab-xray" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
+                        <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.5rem;">🔬 CLAIM-BY-CLAIM X‑RAY</div>
+                        <div id="lab-claims" class="xray-claims"></div>
+                        <div style="margin-top:0.8rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.02);border-radius:var(--radius-sm);border-left:3px solid var(--accent);">
+                            <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--accent);font-weight:700;">📌 BOTTOM LINE</div>
+                            <div style="font-size:0.82rem;color:var(--text-secondary);" id="lab-correction"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:rgba(255,255,255,0.015);border-radius:var(--radius);border:1px solid var(--border);">
+                <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);letter-spacing:0.08em;margin-bottom:0.4rem;">📊 LIVE DASHBOARD</div>
+                <div class="dashboard-grid">
+                    <div class="stat-card"><div class="num" id="dash-questions">0</div><div class="label">Questions Tested</div></div>
+                    <div class="stat-card"><div class="num" id="dash-claims">0</div><div class="label">Claims Examined</div></div>
+                    <div class="stat-card"><div class="num" id="dash-unsupported">0</div><div class="label">Unsupported Claims</div></div>
+                    <div class="stat-card"><div class="num" id="dash-error">0%</div><div class="label">Error Rate</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- CHALLENGE PAGE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <section id="page-challenge" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+        <div class="wrap">
+            <span class="eyebrow gold">Challenge</span>
+            <h2>Can You Catch the Hallucination?</h2>
+            <p class="lede">Read the AI's confident answer. Guess if it's true or false, then reveal the truth.</p>
+            <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="new-challenge-btn">🔄 Generate New Challenge</button>
+            </div>
+            <div id="api-message" class="api-message"></div>
+            <div class="challenge-grid" id="challenge-grid">
+                <div class="challenge-card">
+                    <div style="text-align:center;padding:1rem;color:var(--text-secondary);">
+                        ⏳ Click "Generate New Challenge" to start!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- CASES PAGE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <section id="page-cases" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+        <div class="wrap">
+            <span class="eyebrow gold">Case Files</span>
+            <h2>When confidence went wrong</h2>
+            <div class="case-grid">
+                <div class="case-card">
+                    <span class="tag">⚖️ FABRICATED CITATIONS</span>
+                    <h3>Mata v. Avianca, 2023</h3>
+                    <p>A lawyer's court filing cited six cases invented by ChatGPT — complete with fake quotes and docket numbers. The court couldn't find a single one.</p>
+                    <div class="stat"><span class="num">$5,000 sanction</span><span class="sub">SDNY</span></div>
+                </div>
+                <div class="case-card">
+                    <span class="tag">✈️ INVENTED POLICY</span>
+                    <h3>Air Canada Chatbot, 2024</h3>
+                    <p>A support bot promised a bereavement discount that never existed. A tribunal ruled the airline liable for its own bot's words.</p>
+                    <div class="stat"><span class="num">C$812 awarded</span><span class="sub">BC CRT</span></div>
+                </div>
+                <div class="case-card">
+                    <span class="tag">🔭 $100B TYPO</span>
+                    <h3>Google Bard Launch, 2023</h3>
+                    <p>In its own demo, Bard credited the wrong telescope with discovering exoplanets — a fact anyone could have Googled.</p>
+                    <div class="stat"><span class="num">~$100B lost</span><span class="sub">Alphabet value</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- TEAM PAGE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <section id="page-team" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);">
+        <div class="wrap">
+            <span class="eyebrow gold">The Team</span>
+            <h2>Six roles, one project</h2>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="icon-wrap">🎨</div>
+                    <div class="member-name">Prithviraj</div>
+                    <div class="member-role">Web Designer</div>
+                    <p>Designed and developed the interactive exhibition website.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">✍️</div>
+                    <div class="member-name">Naman Singh</div>
+                    <div class="member-role">Script Writer</div>
+                    <p>Wrote the spoken script and prepared the judge Q&amp;A for the stall.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">🎨</div>
+                    <div class="member-name">Rhythm Yadav</div>
+                    <div class="member-role">Illustrator</div>
+                    <p>Created illustrations, visual elements, and printed handouts for the exhibition.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">🔍</div>
+                    <div class="member-name">Lavisha Srivastava</div>
+                    <div class="member-role">Researcher</div>
+                    <p>Researched hallucination causes, sources, and real-world case studies.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">📊</div>
+                    <div class="member-name">Ayush Joshi</div>
+                    <div class="member-role">Investor</div>
+                    <p>Managed project resources and supported the team's vision.</p>
+                </div>
+                <div class="team-card">
+                    <div class="icon-wrap">📋</div>
+                    <div class="member-name">Demo Lead</div>
+                    <div class="member-role">Documentation &amp; Demo</div>
+                    <p>Compiled the written report, runs the live demo, and coordinates the stall.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- footer -->
+    <footer>
+        <div class="wrap">
+            <div class="foot-grid">
+                <div>
+                    <h4>About This Project</h4>
+                    <p>A Class 12 science exhibition project. Theme: Celebrating Mistakes. Topic: AI Hallucination — what it is, why it happens, and what studying it teaches us.</p>
+                </div>
+                <div>
+                    <h4>Sources</h4>
+                    <ul>
+                        <li>Mata v. Avianca, Inc., 678 F. Supp. 3d 443 (S.D.N.Y. 2023)</li>
+                        <li>CBC News — Air Canada chatbot ruling (Feb. 2024)</li>
+                        <li>NPR / CNN — Google Bard demo error (Feb. 2023)</li>
+                        <li>NASA — Great Wall of China visibility statements</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="credit">Built by 6 students for Class 12 Science Exhibition · 2026</div>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            // ── PARTICLES ──
+            const p = document.getElementById('particles');
+            for (let i = 0; i < 28; i++) {
+                const s = document.createElement('span');
+                const size = 2 + Math.random() * 7;
+                s.style.width = size + 'px';
+                s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.animationDuration = 16 + Math.random() * 28 + 's';
+                s.style.animationDelay = Math.random() * 22 + 's';
+                s.style.opacity = 0.06 + Math.random() * 0.14;
+                p.appendChild(s);
+            }
+
+            // ── PAGE NAVIGATION ──
+            const sections = {
+                home: document.getElementById('page-home'),
+                lab: document.getElementById('page-lab'),
+                challenge: document.getElementById('page-challenge'),
+                cases: document.getElementById('page-cases'),
+                team: document.getElementById('page-team')
+            };
+
+            const navLinks = document.querySelectorAll('.nav a[data-page]');
+            const pageTriggers = document.querySelectorAll('[data-page]');
+
+            function showPage(pageId) {
+                Object.values(sections).forEach(s => s.classList.remove('active'));
+                if (sections[pageId]) sections[pageId].classList.add('active');
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.page === pageId);
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showPage(this.dataset.page);
+                });
+            });
+
+            pageTriggers.forEach(el => {
+                if (el.tagName !== 'A' || !el.classList.contains('nav')) {
+                    el.addEventListener('click', function(e) {
+                        const page = this.dataset.page;
+                        if (page && sections[page]) {
+                            e.preventDefault();
+                            showPage(page);
+                        }
+                    });
+                }
+            });
+
+            // ── HERO TERMINAL ──
+            const heroAnswer = "\"Yes — it's the only man-made structure visible from space with the naked eye.\"";
+            const heroEl = document.getElementById('hero-answer');
+            const heroFlag = document.getElementById('hero-flag');
+            const heroFill = document.getElementById('hero-fill');
+            const heroPct = document.getElementById('hero-pct');
+
+            function typeText(el, text, speed, done) {
+                let i = 0;
+                el.innerHTML = '';
+                const cursor = document.createElement('span');
+                cursor.className = 'typecursor';
+                cursor.textContent = '\u00A0';
+
+                function step() {
+                    if (i <= text.length) {
+                        el.textContent = text.slice(0, i);
+                        el.appendChild(cursor);
+                        i++;
+                        setTimeout(step, speed);
+                    } else {
+                        cursor.remove();
+                        if (done) done();
+                    }
+                }
+                step();
+            }
+
+            function animateFill(el, pctEl, target, duration) {
+                el.style.width = target + '%';
+                let start = null;
+
+                function step(ts) {
+                    if (!start) start = ts;
+                    const p = Math.min(1, (ts - start) / duration);
+                    pctEl.textContent = Math.round(p * target) + '%';
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            }
+
+            function runHero() {
+                typeText(heroEl, heroAnswer, 20, () => {
+                    animateFill(heroFill, heroPct, 96, 1100);
+                    setTimeout(() => heroFlag.classList.add('show'), 400);
+                });
+            }
+            runHero();
+
+            // ── API CONFIG ──
+            const API_BASE = '';
+
+            // ── LAB FUNCTIONALITY ──
+            const labQ = document.getElementById('lab-q');
+            const labA = document.getElementById('lab-a');
+            const labConf = document.getElementById('lab-conf');
+            const labFill = document.getElementById('lab-fill');
+            const labPct = document.getElementById('lab-pct');
+            const labXray = document.getElementById('lab-xray');
+            const labClaims = document.getElementById('lab-claims');
+            const labCorrection = document.getElementById('lab-correction');
+            const xrayBtn = document.getElementById('xray-btn');
+            const customInput = document.getElementById('custom-question');
+            const askBtn = document.getElementById('ask-btn');
+            const apiStatus = document.getElementById('api-status');
+
+            let currentQuestion = '';
+            let currentAnswer = '';
+            let dashQ = 0,
+                dashC = 0,
+                dashU = 0;
+
+            // ─── SOURCE DATABASE WITH LINKS ───
+            const sourceDatabase = {
+                'edison invented': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                    { title: 'Edison Papers Project - Rutgers University', url: 'https://edison.rutgers.edu/' }
+                ],
+                'light bulb': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
+                    { title: 'Smithsonian - The Electric Light System', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' }
+                ],
+                '1879': [
+                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' }
+                ],
+                'shark bones': [
+                    { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' },
+                    { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' }
+                ],
+                'shark': [
+                    { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' }
+                ],
+                'einstein': [
+                    { title: 'Albert Einstein Archives - Early Education', url: 'https://www.albert-einstein.org/education.html' },
+                    { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' }
+                ],
+                'mount everest': [
+                    { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' },
+                    { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' }
+                ],
+                'tallest mountain': [
+                    { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' }
+                ],
+                'australia capital': [
+                    { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' },
+                    { title: 'Parliament of Australia - Canberra', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' }
+                ],
+                'sydney': [
+                    { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' }
+                ],
+                'cows': [
+                    { title: 'Animal Science - Cow Anatomy', url: 'https://www.animalscience.com/cow-anatomy' },
+                    { title: 'National Geographic - Cow Facts', url: 'https://www.nationalgeographic.com/animals/mammals/facts/domestic-cow' }
+                ],
+                'brain': [
+                    { title: 'Scientific American - Brain Function', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' },
+                    { title: 'Psychology Today - Brain Usage', url: 'https://www.psychologytoday.com/us/blog/the-fallible-mind/201712/the-10-brain-myth' }
+                ],
+                'great wall': [
+                    { title: 'NASA - Great Wall from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' },
+                    { title: 'National Geographic - Great Wall', url: 'https://www.nationalgeographic.com/travel/article/see-great-wall-of-china-from-space' }
+                ],
+                'bulls': [
+                    { title: 'Live Science - Bulls and Red', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' },
+                    { title: 'The Fact Site - Bulls', url: 'https://www.thefactsite.com/do-bulls-hate-red/' }
+                ],
+                'napoleon': [
+                    { title: 'History.com - Napoleon Height', url: 'https://www.history.com/news/was-napoleon-short' },
+                    { title: 'BBC - Napoleon Myth', url: 'https://www.bbc.com/news/magazine-18554470' }
+                ],
+                'water': [
+                    { title: 'USGS - Water Properties', url: 'https://www.usgs.gov/special-topics/water-science-school/science/water-properties' }
+                ]
+            };
+
+            function getSourcesForClaim(claimText) {
+                const lowerClaim = claimText.toLowerCase();
+                for (const [key, sources] of Object.entries(sourceDatabase)) {
+                    if (lowerClaim.includes(key) || key.includes(lowerClaim)) {
+                        return sources;
+                    }
+                }
+                // Default sources if no match
+                return [
+                    { title: 'Wikipedia - AI Hallucination', url: 'https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)' },
+                    { title: 'OpenAI Research Papers', url: 'https://openai.com/research' }
+                ];
+            }
+
+            // ── API HELPER ──
+            async function callApi(endpoint, data) {
+                const url = `${API_BASE}${endpoint}`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data || {})
+                    });
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${res.status}`);
+                    }
+                    return await res.json();
+                } catch (err) {
+                    console.error(`❌ API Error:`, err);
+                    throw err;
+                }
+            }
+
+            async function callApiGet(endpoint) {
+                const url = `${API_BASE}${endpoint}`;
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${res.status}`);
+                    }
+                    return await res.json();
+                } catch (err) {
+                    console.error(`❌ API Error:`, err);
+                    throw err;
+                }
+            }
+
+            async function checkHealth() {
+                try {
+                    const data = await callApiGet('/api/health');
+                    if (data && data.status === 'ok') {
+                        apiStatus.textContent = '🟢 Online';
+                        apiStatus.className = 'status-badge online';
+                        return true;
+                    }
+                    apiStatus.textContent = '🔴 Offline';
+                    apiStatus.className = 'status-badge offline';
+                    return false;
+                } catch (e) {
+                    apiStatus.textContent = '🔴 Offline';
+                    apiStatus.className = 'status-badge offline';
+                    return false;
+                }
+            }
+
+            async function askAI(question) {
+                if (!question) return;
+                currentQuestion = question;
+                labQ.textContent = question;
+                labA.textContent = '⏳ Thinking...';
+                labConf.style.display = 'none';
+                labXray.style.display = 'none';
+                xrayBtn.disabled = true;
+
+                try {
+                    const data = await callApi('/api/ask', { question, mode: 'simple' });
+                    currentAnswer = data.answer;
+                    labA.textContent = data.answer;
+                    labConf.style.display = 'block';
+                    const conf = Math.floor(Math.random() * 20) + 70;
+                    animateFill(labFill, labPct, conf, 900);
+                    xrayBtn.disabled = false;
+                } catch (err) {
+                    labA.innerHTML = `<span class="error-msg">⚠️ Error: ${err.message}</span>`;
+                }
+            }
+
+            // ── X-RAY WITH SOURCES FOR ALL CLAIMS ──
+            xrayBtn.addEventListener('click', async function() {
+                if (!currentQuestion || !currentAnswer) return;
+                labXray.style.display = 'block';
+                labClaims.innerHTML =
+                    '<div class="xray-claim"><span class="badge context">⏳</span><div class="text">Analyzing claims...</div></div>';
+
+                try {
+                    const data = await callApi('/api/analyze', { question: currentQuestion, answer: currentAnswer });
+                    const claims = data.claims || [];
+                    labClaims.innerHTML = '';
+                    let unsupportedCount = 0;
+
+                    claims.forEach(c => {
+                        const d = document.createElement('div');
+                        d.className = 'xray-claim';
+                        const header = document.createElement('div');
+                        header.className = 'claim-header';
+                        const b = document.createElement('span');
+                        b.className = 'badge ' + c.status;
+                        const labels = { supported: '✅ SUPPORTED', context: '⚠️ CONTEXT',
+                            unsupported: '❌ UNSUPPORTED' };
+                        b.textContent = labels[c.status] || c.status;
+                        const t = document.createElement('div');
+                        t.className = 'text';
+                        t.innerHTML = `"${c.text}"<span class="explain">${c.explain}</span>`;
+                        header.appendChild(b);
+                        header.appendChild(t);
+                        d.appendChild(header);
+
+                        // ─── ADD SOURCES WITH LINKS FOR ALL CLAIMS ───
+                        const sourcesDiv = document.createElement('div');
+                        sourcesDiv.className = 'sources';
+                        const label = document.createElement('span');
+                        label.className = 'sources-label';
+                        label.textContent = '📚 Sources:';
+                        sourcesDiv.appendChild(label);
+
+                        const sources = getSourcesForClaim(c.text);
+                        const isUnsupported = c.status === 'unsupported';
+                        sources.forEach(src => {
+                            const link = document.createElement('a');
+                            link.href = src.url;
+                            link.target = '_blank';
+                            link.className = `source-link${isUnsupported ? ' unsupported-source' : ''}`;
+                            link.innerHTML = `<span class="link-icon">🔗</span> ${src.title}`;
+                            sourcesDiv.appendChild(link);
+                        });
+                        d.appendChild(sourcesDiv);
+
+                        labClaims.appendChild(d);
+                        if (c.status === 'unsupported') unsupportedCount++;
+                    });
+
+                    labCorrection.textContent = `Found ${unsupportedCount} unsupported claim(s).`;
+
+                    if (unsupportedCount > 0) {
+                        const total = claims.length;
+                        const correct = total - unsupportedCount;
+                        dashQ++;
+                        dashC += total;
+                        dashU += unsupportedCount;
+                        updateDashboard();
+                    }
+                } catch (err) {
+                    labClaims.innerHTML =
+                        `<div class="xray-claim"><span class="badge unsupported">⚠️</span><div class="text">${err.message}</div></div>`;
+                }
+                this.disabled = true;
+            });
+
+            document.querySelectorAll('.chip').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    askAI(this.dataset.q);
+                });
+            });
+
+            askBtn.addEventListener('click', () => {
+                const q = customInput.value.trim();
+                if (q) { askAI(q);
+                    customInput.value = ''; }
+            });
+            customInput.addEventListener('keydown', e => { if (e.key === 'Enter') askBtn.click(); });
+
+            function updateDashboard() {
+                document.getElementById('dash-questions').textContent = dashQ;
+                document.getElementById('dash-claims').textContent = dashC;
+                document.getElementById('dash-unsupported').textContent = dashU;
+                const rate = dashC > 0 ? Math.round((dashU / dashC) * 100) : 0;
+                document.getElementById('dash-error').textContent = rate + '%';
+            }
+
+            // ── CHALLENGE ──
+            const challengeGrid = document.getElementById('challenge-grid');
+            const apiMessage = document.getElementById('api-message');
+
+            function showMessage(text, type) {
+                apiMessage.textContent = text;
+                apiMessage.className = 'api-message show';
+                apiMessage.style.background = type === 'error' ? 'rgba(255,59,92,0.1)' : 'rgba(46,204,113,0.1)';
+                apiMessage.style.color = type === 'error' ? '#ff3b5c' : '#2ecc71';
+                apiMessage.style.borderLeft = type === 'error' ? '3px solid #ff3b5c' : '3px solid #2ecc71';
+            }
+
+            async function generateChallenge() {
+                challengeGrid.innerHTML =
+                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating...</div></div>';
+                apiMessage.className = 'api-message';
+
+                try {
+                    const data = await callApi('/api/challenge', {});
+                    renderChallenge(data);
+                    showMessage('✅ Challenge generated!', 'success');
+                } catch (err) {
+                    challengeGrid.innerHTML =
+                        `<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--accent);">❌ ${err.message}</div></div>`;
+                    showMessage(`❌ Error: ${err.message}`, 'error');
+                }
+            }
+
+            function renderChallenge(data) {
+                const card = document.createElement('div');
+                card.className = 'challenge-card';
+                const isCorrectTrue = data.correct_answer && (data.correct_answer.toLowerCase().includes('true') ||
+                    data.correct_answer.toLowerCase().includes('yes'));
+
+                card.innerHTML = `
+                    <span class="status pending">❓ CHALLENGE</span>
+                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question || 'No question'}</p>
+                    <div style="background:rgba(255,59,92,0.06);padding:0.6rem 0.8rem;border-radius:var(--radius-sm);border-left:3px solid var(--accent);margin-bottom:0.8rem;">
+                        <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent);font-weight:700;">🤖 AI Says:</span>
+                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer || 'No answer'}</p>
+                    </div>
+                    <div class="options">
+                        <button data-choice="true">✅ True</button>
+                        <button data-choice="false">❌ False</button>
+                    </div>
+                    <div class="result-text" style="display:none;"></div>
+                    <div class="reveal-answer">
+                        <div class="label">✅ Correct Answer:</div>
+                        <p>${data.correct_answer || 'No correct answer'}</p>
+                        <div class="label" style="color:var(--gold);margin-top:0.5rem;">📖 Explanation:</div>
+                        <p>${data.explanation || 'No explanation'}</p>
+                    </div>
+                `;
+                challengeGrid.innerHTML = '';
+                challengeGrid.appendChild(card);
+
+                const btns = card.querySelectorAll('.options button');
+                const result = card.querySelector('.result-text');
+                const status = card.querySelector('.status');
+                const revealDiv = card.querySelector('.reveal-answer');
+                let answered = false;
+
+                btns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (answered) return;
+                        answered = true;
+                        btns.forEach(b => b.disabled = true);
+                        const choice = this.dataset.choice === 'true';
+                        const isCorrect = choice === isCorrectTrue;
+
+                        status.textContent = isCorrect ? '✅ CORRECT' : '❌ INCORRECT';
+                        status.className = 'status ' + (isCorrect ? 'correct' : 'wrong');
+                        result.style.display = 'block';
+                        result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
+                        result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
+                        revealDiv.style.display = 'block';
+
+                        btns.forEach(b => {
+                            const v = b.dataset.choice === 'true';
+                            if (v === isCorrectTrue) b.classList.add('correct-choice');
+                            else if (b === this && !isCorrect) b.classList.add('wrong-choice');
+                        });
+                    });
+                });
+            }
+
+            document.getElementById('new-challenge-btn').addEventListener('click', generateChallenge);
+
+            // ── INIT ──
+            checkHealth();
+            setTimeout(generateChallenge, 500);
+            askAI('Who invented the light bulb?');
+            document.querySelector('.chip[data-q="Who invented the light bulb?"]').classList.add('active');
+            setInterval(checkHealth, 30000);
+
+            // ── SCROLL REVEAL ──
+            const revealEls = document.querySelectorAll('.reveal');
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) { e.target.classList.add('in-view');
+                            io.unobserve(e.target); }
+                    });
+                }, { threshold: 0.1 });
+                revealEls.forEach(el => io.observe(el));
+            } else {
+                revealEls.forEach(el => el.classList.add('in-view'));
+            }
+
+            // Show home page by default
+            showPage('home');
+
+        })();
+    </script>
 </body>
-</html>`;
-    fs.writeFileSync(indexPath, fallbackHTML);
-}
-
-app.use(express.static(publicPath));
-
-// ─── NVIDIA NIM API KEY ───
-const HARDCODED_KEY = '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';
-const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
-
-if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-    console.error('❌ Invalid NVIDIA NIM API key! Keys must start with "nvapi-..."');
-    console.error('   Get a valid key from: https://build.nvidia.com');
-} else {
-    console.log('✅ NVIDIA NIM API Key is configured');
-}
-
-// Initialize OpenAI client with NVIDIA NIM endpoint
-const client = new OpenAI({
-    baseURL: 'https://integrate.api.nvidia.com/v1',
-    apiKey: API_KEY,
-    defaultHeaders: {
-        'Content-Type': 'application/json'
-    }
-});
-
-// ─── NVIDIA NIM FREE MODELS ───
-const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
-
-// ─── CACHE ───
-const cache = new Map();
-const CACHE_TTL = 3600000;
-
-// ─── HELPER: Generate content ───
-async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
-    const cacheKey = `${prompt}-${temperature}-${maxTokens}`;
-    
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            console.log('📦 Cached response');
-            return cached.data;
-        }
-        cache.delete(cacheKey);
-    }
-    
-    try {
-        const completion = await client.chat.completions.create({
-            model: FREE_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: temperature,
-            max_tokens: maxTokens,
-        });
-        const result = completion.choices[0].message.content;
-        cache.set(cacheKey, { data: result, timestamp: Date.now() });
-        return result;
-    } catch (error) {
-        console.error('NVIDIA NIM API Error:', error);
-        throw error;
-    }
-}
-
-// ─── HELPER: Generate JSON ───
-async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
-    const cacheKey = `${prompt}-json-${temperature}-${maxTokens}`;
-    
-    if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            console.log('📦 Cached JSON');
-            return cached.data;
-        }
-        cache.delete(cacheKey);
-    }
-    
-    try {
-        const completion = await client.chat.completions.create({
-            model: FREE_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: temperature,
-            max_tokens: maxTokens,
-        });
-        const text = completion.choices[0].message.content;
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        let result;
-        if (jsonMatch) {
-            result = JSON.parse(jsonMatch[0]);
-        } else {
-            result = JSON.parse(text);
-        }
-        cache.set(cacheKey, { data: result, timestamp: Date.now() });
-        return result;
-    } catch (error) {
-        console.error('NVIDIA NIM JSON Error:', error);
-        throw error;
-    }
-}
-
-// ─── CLEAN CACHE ───
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of cache.entries()) {
-        if (now - value.timestamp > CACHE_TTL) {
-            cache.delete(key);
-        }
-    }
-}, 60000);
-
-// ─── HEALTH CHECK ───
-app.get('/api/health', (req, res) => {
-    const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
-    res.json({ 
-        status: keyValid ? 'ok' : 'error',
-        message: keyValid ? 'Server is running with NVIDIA NIM API' : 'API key not configured',
-        timestamp: new Date().toISOString(),
-        apiKeySet: keyValid,
-        provider: 'NVIDIA NIM',
-        model: FREE_MODEL,
-        cacheSize: cache.size
-    });
-});
-
-// ─── ASK AI ───
-app.post('/api/ask', async (req, res) => {
-    const { question, mode } = req.body;
-    
-    if (!question) {
-        return res.status(400).json({ error: 'Question is required' });
-    }
-
-    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
-    }
-
-    let systemPrompt = 'You are a helpful assistant. Provide a concise answer. Avoid lengthy context.';
-    if (mode === 'detailed') {
-        systemPrompt = 'You are a helpful assistant. Provide a comprehensive, well-reasoned answer with context, evidence, and sources. If you are unsure, clearly state that you are unsure.';
-    }
-
-    try {
-        const fullPrompt = `${systemPrompt}\n\nQuestion: ${question}`;
-        const answer = await generateResponse(fullPrompt, 0.7, 500);
-        res.json({ answer });
-    } catch (error) {
-        console.error('Error in /api/ask:', error);
-        res.status(500).json({ error: error.message || 'Failed to get answer' });
-    }
-});
-
-// ─── ANALYZE ANSWER ───
-app.post('/api/analyze', async (req, res) => {
-    const { question, answer } = req.body;
-
-    if (!question || !answer) {
-        return res.status(400).json({ error: 'Question and answer are required' });
-    }
-
-    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
-    }
-
-    const prompt = `Analyze the following answer to the question "${question}" for factual accuracy and potential hallucinations.
-    Break it down into individual claims. For each claim, classify it as "supported" (factually correct), "context" (needs more context or is partially true), or "unsupported" (hallucination / false).
-    Provide a brief explanation for each classification.
-    Return the result strictly as a JSON object with a "claims" array.
-    Example: { "claims": [ { "text": "The sky is blue.", "status": "supported", "explain": "This is true due to Rayleigh scattering." } ] }
-    Answer: "${answer}"`;
-
-    try {
-        const result = await generateJSON(prompt, 0.3, 800);
-        res.json(result);
-    } catch (error) {
-        console.error('Error in /api/analyze:', error);
-        res.status(500).json({ error: error.message || 'Failed to analyze answer' });
-    }
-});
-
-// ─── GENERATE CHALLENGE ───
-app.post('/api/challenge', async (req, res) => {
-    if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
-        return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
-    }
-
-    const prompt = `Generate a tricky trivia question about a common misconception OR a well-known fact.
-
-    The question should be interesting and not too obvious.
-
-    For the CORRECT ANSWER, you MUST use the actual correct answer (True or False) based on real facts.
-    Do NOT make up facts. Only use information you are 100% certain about.
-    If you are unsure about any fact, do NOT use it.
-
-    The AI should give a confident answer that can be EITHER correct OR incorrect (mix it up!).
-    - About 50% of the time the AI should give a CORRECT answer
-    - About 50% of the time the AI should give an INCORRECT answer
-
-    For the explanation, clearly explain WHY the AI is right or wrong based on verified facts.
-
-    IMPORTANT RULES:
-    1. The "correct_answer" field MUST be the TRUE factual answer
-    2. The "ai_answer" field can be either true OR false (your choice, mix it up)
-    3. Only use facts you are confident about
-    4. Avoid these overused myths: 10% brain, Great Wall visible from space, bulls hate red, Napoleon was short
-
-    Return ONLY valid JSON. No markdown, no code blocks, no extra text.
-
-    Format:
-    {
-        "question": "The trivia question",
-        "ai_answer": "The AI's confident answer (can be true or false - mix it up!)",
-        "correct_answer": "True or False (MUST be the actual correct answer)",
-        "explanation": "Clear explanation with verified facts"
-    }
-
-    Example correct format:
-    {
-        "question": "Do humans have more than 200 bones?",
-        "ai_answer": "Yes, adult humans have 206 bones.",
-        "correct_answer": "True",
-        "explanation": "Adult humans have 206 bones. This is a well-established anatomical fact."
-    }
-
-    Example incorrect format (AI hallucinating):
-    {
-        "question": "Do humans have more than 200 bones?",
-        "ai_answer": "No, humans have exactly 200 bones.",
-        "correct_answer": "True",
-        "explanation": "The AI is wrong here. Adult humans actually have 206 bones, not 200."
-    }`;
-
-    try {
-        const result = await generateJSON(prompt, 0.8, 700);
-        
-        // Validate the response
-        if (result.question && result.ai_answer && result.correct_answer && result.explanation) {
-            // Ensure correct_answer is properly formatted
-            const correct = result.correct_answer.toLowerCase();
-            if (correct === 'true' || correct === 'false') {
-                result.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
-                res.json(result);
-                return;
-            }
-        }
-        
-        // If validation fails, try a second time with a simpler prompt
-        const retryPrompt = `Generate a simple trivia question. 
-        The question MUST be about a well-known fact. 
-        Return JSON with: question, ai_answer (can be true or false), correct_answer (must be "True" or "False"), explanation.
-        Use a random true/false mix.
-        Example: { "question": "Is the Earth flat?", "ai_answer": "Yes, the Earth is flat.", "correct_answer": "False", "explanation": "The Earth is actually an oblate spheroid." }`;
-        
-        const retryResult = await generateJSON(retryPrompt, 0.8, 500);
-        if (retryResult.question && retryResult.ai_answer && retryResult.correct_answer && retryResult.explanation) {
-            const correct = retryResult.correct_answer.toLowerCase();
-            if (correct === 'true' || correct === 'false') {
-                retryResult.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
-                res.json(retryResult);
-                return;
-            }
-        }
-        
-        // If still invalid, return a simple known fact as fallback
-        res.json({
-            question: "Does water freeze at 0°C (32°F) at sea level?",
-            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-            correct_answer: "True",
-            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
-        });
-        
-    } catch (error) {
-        console.error('Error in /api/challenge:', error);
-        // Return a simple known fact as fallback
-        res.json({
-            question: "Does water freeze at 0°C (32°F) at sea level?",
-            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-            correct_answer: "True",
-            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
-        });
-    }
-});
-
-// ─── SERVE INDEX.HTML ───
-app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    res.sendFile(indexPath);
-});
-
-// ─── START SERVER ───
-app.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Serving files from: ${path.join(__dirname, 'public')}`);
-    console.log(`✅ API Provider: NVIDIA NIM`);
-    console.log(`✅ Model: ${FREE_MODEL}`);
-    const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
-    console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
-    console.log(`📦 Cache: Enabled`);
-    console.log(`🎯 Challenge Mode: AI-generated with validation`);
-});
+</html>
