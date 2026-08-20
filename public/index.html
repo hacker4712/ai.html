@@ -84,11 +84,6 @@
             background: rgba(255, 59, 92, 0.08);
             margin-bottom: 0.9rem;
             border: 1px solid rgba(255, 59, 92, 0.08);
-            animation: eyebrowPulse 3s ease-in-out infinite;
-        }
-        @keyframes eyebrowPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255,59,92,0); }
-            50% { box-shadow: 0 0 40px rgba(255,59,92,0.15); }
         }
         .eyebrow.gold {
             color: var(--gold);
@@ -101,11 +96,6 @@
             font-weight: 700;
             letter-spacing: -0.02em;
             line-height: 1.04;
-            animation: textGlow 4s ease-in-out infinite;
-        }
-        @keyframes textGlow {
-            0%, 100% { text-shadow: 0 0 40px rgba(255,59,92,0); }
-            50% { text-shadow: 0 0 80px rgba(255,59,92,0.15); }
         }
         h2 {
             font-family: var(--font-display);
@@ -216,11 +206,6 @@
             background: rgba(11, 11, 20, 0.72);
             backdrop-filter: blur(18px) saturate(1.6);
             border-bottom: 1px solid var(--border);
-            animation: navGlow 3s ease-in-out infinite;
-        }
-        @keyframes navGlow {
-            0%, 100% { border-bottom-color: rgba(255,59,92,0.1); }
-            50% { border-bottom-color: rgba(255,59,92,0.3); }
         }
         .nav .wrap {
             display: flex;
@@ -324,11 +309,6 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-style: italic;
-            animation: wrongGlow 3s ease-in-out infinite;
-        }
-        @keyframes wrongGlow {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(255,59,92,0)); }
-            50% { filter: drop-shadow(0 0 60px rgba(255,59,92,0.3)); }
         }
         .hero .sub {
             font-size: 1.1rem;
@@ -351,11 +331,6 @@
             background: rgba(255, 255, 255, 0.02);
             transition: all var(--transition);
             cursor: pointer;
-            animation: cueFloat 3s ease-in-out infinite;
-        }
-        @keyframes cueFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
         }
         .hero .cue:hover {
             background: rgba(255, 59, 92, 0.08);
@@ -381,14 +356,9 @@
             padding: 1.6rem 1.7rem 1.8rem;
             box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
             transition: transform 0.5s ease, box-shadow 0.5s ease;
-            animation: terminalFloat 6s ease-in-out infinite;
-        }
-        @keyframes terminalFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
         }
         .terminal:hover {
-            transform: translateY(-3px) scale(1.01);
+            transform: translateY(-3px);
             box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
         }
         .terminal .dots {
@@ -403,13 +373,9 @@
             display: block;
             transition: transform 0.3s ease;
         }
-        .terminal .dots span:nth-child(1) { background: var(--accent); animation: dotPulse 1.5s ease-in-out infinite; }
-        .terminal .dots span:nth-child(2) { background: var(--gold); animation: dotPulse 1.5s ease-in-out infinite 0.3s; }
-        .terminal .dots span:nth-child(3) { background: var(--green); animation: dotPulse 1.5s ease-in-out infinite 0.6s; }
-        @keyframes dotPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-        }
+        .terminal .dots span:nth-child(1) { background: var(--accent); }
+        .terminal .dots span:nth-child(2) { background: var(--gold); }
+        .terminal .dots span:nth-child(3) { background: var(--green); }
         .terminal .dots span:hover { transform: scale(1.25); }
         .terminal .qline,
         .terminal .aline {
@@ -438,17 +404,12 @@
             padding-top: 1rem;
             margin-top: 0.2rem;
             opacity: 0;
-            transform: translateY(8px) scale(0.95);
+            transform: translateY(8px);
             transition: opacity 0.6s ease, transform 0.6s ease;
         }
         .flag.show {
             opacity: 1;
-            transform: translateY(0) scale(1);
-            animation: flagReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        @keyframes flagReveal {
-            0% { opacity: 0; transform: scale(0.8) rotate(-5deg); }
-            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+            transform: translateY(0);
         }
         .flag .flag-icon {
             width: 2rem;
@@ -459,11 +420,6 @@
             align-items: center;
             justify-content: center;
             flex: none;
-            animation: flagIconSpin 4s linear infinite;
-        }
-        @keyframes flagIconSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         .flag .flag-icon svg { width: 1rem; height: 1rem; color: var(--accent); }
         .flag-title { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; color: var(--accent); font-weight: 600; }
@@ -540,7 +496,6 @@
         .lab-input-wrap input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 30px var(--accent-glow);
-            transform: scale(1.01);
         }
         .lab-input-wrap button {
             padding: 0.7rem 1.6rem;
@@ -598,18 +553,12 @@
         .chip:hover {
             border-color: var(--accent);
             color: var(--text-primary);
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 0 30px rgba(255,59,92,0.1);
+            transform: translateY(-2px);
         }
         .chip.active {
             background: rgba(255, 59, 92, 0.12);
             border-color: var(--accent);
             color: var(--text-primary);
-            animation: chipActive 1.5s ease-in-out infinite;
-        }
-        @keyframes chipActive {
-            0%, 100% { box-shadow: 0 0 20px rgba(255,59,92,0.2); }
-            50% { box-shadow: 0 0 40px rgba(255,59,92,0.4); }
         }
 
         .status-badge {
@@ -628,11 +577,6 @@
             background: var(--green-glow);
             color: var(--green);
             border-color: rgba(46, 204, 113, 0.3);
-            animation: statusOnline 2s ease-in-out infinite;
-        }
-        @keyframes statusOnline {
-            0%, 100% { box-shadow: 0 0 20px rgba(46,204,113,0); }
-            50% { box-shadow: 0 0 40px rgba(46,204,113,0.2); }
         }
         .status-badge.offline {
             background: rgba(255, 59, 92, 0.12);
@@ -643,11 +587,6 @@
             background: var(--gold-glow);
             color: var(--gold);
             border-color: rgba(255, 198, 43, 0.3);
-            animation: statusChecking 1s ease-in-out infinite;
-        }
-        @keyframes statusChecking {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         /* ── X-Ray Claims ── */
@@ -665,17 +604,16 @@
             border-radius: var(--radius-sm);
             background: rgba(255, 255, 255, 0.02);
             border-left: 3px solid transparent;
-            animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: slideIn 0.5s ease forwards;
             opacity: 0;
-            transform: translateX(-20px) scale(0.95);
+            transform: translateX(-10px);
         }
         .xray-claim:nth-child(1) { animation-delay: 0.05s; }
         .xray-claim:nth-child(2) { animation-delay: 0.12s; }
         .xray-claim:nth-child(3) { animation-delay: 0.19s; }
         .xray-claim:nth-child(4) { animation-delay: 0.26s; }
-        .xray-claim:nth-child(5) { animation-delay: 0.33s; }
         @keyframes slideIn {
-            to { opacity: 1; transform: translateX(0) scale(1); }
+            to { opacity: 1; transform: translateX(0); }
         }
         .xray-claim .claim-header {
             display: flex;
@@ -692,34 +630,18 @@
             border-radius: 1rem;
             white-space: nowrap;
             margin-top: 0.1rem;
-            transition: all 0.3s ease;
         }
         .badge.supported {
             background: var(--green-glow);
             color: var(--green);
-            animation: badgeSupported 2s ease-in-out infinite;
-        }
-        @keyframes badgeSupported {
-            0%, 100% { box-shadow: 0 0 10px rgba(46,204,113,0); }
-            50% { box-shadow: 0 0 30px rgba(46,204,113,0.3); }
         }
         .badge.context {
             background: var(--gold-glow);
             color: var(--gold);
-            animation: badgeContext 2s ease-in-out infinite;
-        }
-        @keyframes badgeContext {
-            0%, 100% { box-shadow: 0 0 10px rgba(255,198,43,0); }
-            50% { box-shadow: 0 0 30px rgba(255,198,43,0.3); }
         }
         .badge.unsupported {
             background: rgba(255, 59, 92, 0.15);
             color: var(--accent);
-            animation: badgeUnsupported 1.5s ease-in-out infinite;
-        }
-        @keyframes badgeUnsupported {
-            0%, 100% { box-shadow: 0 0 10px rgba(255,59,92,0); }
-            50% { box-shadow: 0 0 30px rgba(255,59,92,0.3); }
         }
         .xray-claim .text {
             font-size: 0.82rem;
@@ -754,9 +676,7 @@
         }
         .xray-claim .source-link:hover {
             background: rgba(46, 204, 113, 0.2);
-            transform: translateY(-2px) scale(1.05);
-            color: #55efc4;
-            box-shadow: 0 4px 20px rgba(46,204,113,0.2);
+            transform: translateY(-2px);
         }
         .sources-label {
             font-family: var(--font-mono);
@@ -798,6 +718,7 @@
             66% { content: '..'; }
             100% { content: '...'; }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── CHALLENGE SECTION ── */
         .challenge-grid {
@@ -838,21 +759,10 @@
         .status.correct {
             background: var(--green-glow);
             color: var(--green);
-            animation: statusCorrect 1.5s ease-in-out infinite;
-        }
-        @keyframes statusCorrect {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
         .status.wrong {
             background: rgba(255, 59, 92, 0.12);
             color: var(--accent);
-            animation: statusWrong 0.5s ease 3;
-        }
-        @keyframes statusWrong {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
         }
         .challenge-ai-answer {
             background: rgba(255, 59, 92, 0.06);
@@ -909,55 +819,31 @@
             border-color: var(--text-secondary);
             color: var(--text-primary);
             background: rgba(255, 255, 255, 0.03);
-            transform: scale(1.02);
         }
         .challenge-card .options button:disabled { opacity: 0.4; cursor: default; }
         .challenge-card .options button.correct-choice {
             border-color: var(--green);
             background: var(--green-glow);
             color: var(--green);
-            animation: correctChoice 0.6s ease;
-        }
-        @keyframes correctChoice {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
         }
         .challenge-card .options button.wrong-choice {
             border-color: var(--accent);
             background: rgba(255, 59, 92, 0.1);
             color: var(--accent);
-            animation: wrongChoice 0.5s ease 2;
-        }
-        @keyframes wrongChoice {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-5deg); }
-            75% { transform: rotate(5deg); }
         }
         .result-text {
             margin-top: 0.8rem;
             font-size: 0.82rem;
             padding: 0.5rem 0.7rem;
             border-radius: var(--radius-sm);
-            animation: slideIn 0.4s ease forwards;
         }
         .result-text.correct {
             background: var(--green-glow);
             color: var(--green);
-            animation: resultCorrect 0.6s ease;
-        }
-        @keyframes resultCorrect {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
         }
         .result-text.wrong {
             background: rgba(255, 59, 92, 0.08);
             color: var(--accent);
-            animation: resultWrong 0.5s ease;
-        }
-        @keyframes resultWrong {
-            0% { transform: translateX(-10px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
         }
         .reveal-answer {
             margin-top: 0.8rem;
@@ -965,11 +851,6 @@
             background: var(--green-glow);
             border-radius: var(--radius-sm);
             display: none;
-            animation: revealAnswer 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        @keyframes revealAnswer {
-            0% { opacity: 0; transform: scale(0.8) translateY(-10px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
         .reveal-answer.show { display: block; }
         .reveal-answer .label {
@@ -990,11 +871,7 @@
             border-radius: 8px;
             display: none;
         }
-        .api-message.show { display: block; animation: apiMessage 0.5s ease; }
-        @keyframes apiMessage {
-            0% { opacity: 0; transform: translateY(-10px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
+        .api-message.show { display: block; }
 
         .challenge-loading {
             display: flex;
@@ -1044,7 +921,7 @@
         }
         .stat-card:hover {
             background: rgba(255, 255, 255, 0.04);
-            transform: translateY(-2px) scale(1.02);
+            transform: translateY(-2px);
         }
         .stat-card .num {
             font-family: var(--font-display);
@@ -1054,12 +931,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: statNumPulse 3s ease-in-out infinite;
             transition: all 0.3s ease;
-        }
-        @keyframes statNumPulse {
-            0%, 100% { background: linear-gradient(135deg, var(--text-primary), var(--text-secondary)); }
-            50% { background: linear-gradient(135deg, var(--gold), var(--accent)); }
         }
         .stat-card .label {
             font-family: var(--font-mono);
@@ -1067,14 +939,6 @@
             letter-spacing: 0.06em;
             color: var(--text-muted);
             margin-top: 0.2rem;
-        }
-        /* Dashboard counter animation */
-        .stat-card .num.count-up {
-            animation: countUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes countUp {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
         }
 
         /* ── Cases ── */
@@ -1095,7 +959,7 @@
         }
         .case-card:hover {
             border-color: var(--border-hover);
-            transform: translateY(-4px) scale(1.01);
+            transform: translateY(-4px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
         }
         .case-card .tag {
@@ -1139,7 +1003,7 @@
         }
         .team-card:hover {
             border-color: var(--border-hover);
-            transform: translateY(-4px) scale(1.02);
+            transform: translateY(-4px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
         }
         .team-card .icon-wrap {
@@ -1233,19 +1097,6 @@
 
         ::selection { background: var(--accent); color: #fff; }
         :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--accent);
-            animation: spin 0.8s linear infinite;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
         }
@@ -1325,7 +1176,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- LAB PAGE (LIVE DASHBOARD FIXED) -->
+    <!-- LAB PAGE (DASHBOARD FIXED) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-lab">
         <div class="wrap">
@@ -1375,7 +1226,7 @@
                 </div>
             </div>
 
-            <!-- LIVE DASHBOARD (FIXED) -->
+            <!-- LIVE DASHBOARD (FIXED - NUMBERS VISIBLE) -->
             <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:rgba(255,255,255,0.015);border-radius:var(--radius);border:1px solid var(--border);">
                 <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);letter-spacing:0.08em;margin-bottom:0.4rem;">📊 LIVE DASHBOARD</div>
                 <div class="dashboard-grid">
@@ -1831,6 +1682,7 @@
                     labCorrection.textContent = `Found ${unsupportedCount} unsupported claim(s).`;
 
                     if (unsupportedCount > 0) {
+                        // ─── UPDATE DASHBOARD ───
                         dashQ++;
                         dashC += claims.length;
                         dashU += unsupportedCount;
@@ -1858,36 +1710,16 @@
             });
             customInput.addEventListener('keydown', e => { if (e.key === 'Enter') askBtn.click(); });
 
-            // ─── DASHBOARD (FIXED - updates with animation) ───
+            // ─── UPDATE DASHBOARD ───
             function updateDashboard() {
-                const questionsEl = document.getElementById('dash-questions');
-                const claimsEl = document.getElementById('dash-claims');
-                const unsupportedEl = document.getElementById('dash-unsupported');
-                const errorEl = document.getElementById('dash-error');
-
-                // Update and animate each stat
-                animateStat(questionsEl, dashQ);
-                animateStat(claimsEl, dashC);
-                animateStat(unsupportedEl, dashU);
-                
+                document.getElementById('dash-questions').textContent = dashQ;
+                document.getElementById('dash-claims').textContent = dashC;
+                document.getElementById('dash-unsupported').textContent = dashU;
                 const rate = dashC > 0 ? Math.round((dashU / dashC) * 100) : 0;
-                errorEl.textContent = rate + '%';
-                errorEl.classList.remove('count-up');
-                void errorEl.offsetWidth;
-                errorEl.classList.add('count-up');
+                document.getElementById('dash-error').textContent = rate + '%';
             }
 
-            function animateStat(element, value) {
-                const current = parseInt(element.textContent) || 0;
-                if (current === value) return;
-                
-                element.classList.remove('count-up');
-                void element.offsetWidth;
-                element.textContent = value;
-                element.classList.add('count-up');
-            }
-
-            // ── CHALLENGE ──
+            // ─── CHALLENGE ──
             const challengeGrid = document.getElementById('challenge-grid');
             const apiMessage = document.getElementById('api-message');
 
@@ -1931,27 +1763,27 @@
                 const fallbacks = [
                     {
                         question: "Is the Great Wall of China visible from space?",
-                        ai_answer: "Yes, it's the only man-made structure visible from space with the naked eye. Astronauts can clearly see it from the International Space Station.",
+                        ai_answer: "Yes, it's the only man-made structure visible from space with the naked eye.",
                         correct_answer: "False",
-                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit. It's too narrow and blends with the terrain."
+                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit."
                     },
                     {
                         question: "Do humans use only 10% of their brain?",
-                        ai_answer: "Yes, humans only use 10% of their brain capacity. The other 90% is dormant and unused.",
+                        ai_answer: "Yes, humans only use 10% of their brain capacity.",
                         correct_answer: "False",
                         explanation: "Brain imaging shows we use 100% of our brain, just not all at once."
                     },
                     {
                         question: "Is the capital of Australia Sydney?",
-                        ai_answer: "Yes, Sydney is the capital of Australia. It's the largest and most famous city.",
+                        ai_answer: "Yes, Sydney is the capital of Australia.",
                         correct_answer: "False",
-                        explanation: "The capital of Australia is Canberra, chosen in 1908 as a compromise between Sydney and Melbourne."
+                        explanation: "The capital of Australia is Canberra, chosen in 1908."
                     },
                     {
                         question: "Does water boil at 100°C at sea level?",
-                        ai_answer: "No, water boils at 90°C at sea level. The boiling point varies significantly.",
+                        ai_answer: "No, water boils at 90°C at sea level.",
                         correct_answer: "True",
-                        explanation: "At standard atmospheric pressure (sea level), pure water boils at exactly 100°C (212°F)."
+                        explanation: "At standard atmospheric pressure, water boils at exactly 100°C."
                     }
                 ];
                 return fallbacks[Math.floor(Math.random() * fallbacks.length)];
