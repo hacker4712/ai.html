@@ -692,7 +692,7 @@
             margin-right: 0.3rem;
         }
 
-        /* ── Challenge ── */
+        /* ── Challenge Section (Fixed) ── */
         .challenge-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -819,6 +819,39 @@
         .api-message.show {
             display: block;
         }
+        /* Challenge loading animation */
+        .challenge-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            gap: 1rem;
+        }
+        .challenge-loading .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .challenge-loading .loader-text {
+            color: var(--gold);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+        }
+        .challenge-loading .loader-dots::after {
+            content: '';
+            animation: dots 1.5s steps(3) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
 
         /* ── Cases ── */
         .case-grid {
@@ -882,7 +915,7 @@
             color: var(--text-muted);
         }
 
-        /* ── Team (SWAPPED: Shreyash & Nimish) ── */
+        /* ── Team ── */
         .team-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1220,13 +1253,13 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- CHALLENGE PAGE -->
+    <!-- CHALLENGE PAGE (FIXED) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-challenge" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
         <div class="wrap">
             <span class="eyebrow gold">Challenge</span>
             <h2>Can You Catch the Hallucination?</h2>
-            <p class="lede">Read the AI's confident answer. Guess if it's true or false, then reveal the truth.</p>
+            <p class="lede">Read the AI's confident answer. Guess if it's true or false, then reveal the truth with a full explanation.</p>
             <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
                 <button class="btn btn-primary" id="new-challenge-btn">🔄 Generate New Challenge</button>
             </div>
@@ -1272,7 +1305,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- TEAM PAGE (SWAPPED: Shreyash & Nimish) -->
+    <!-- TEAM PAGE -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-team" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);">
         <div class="wrap">
@@ -1674,7 +1707,7 @@
                 document.getElementById('dash-error').textContent = rate + '%';
             }
 
-            // ── CHALLENGE ──
+            // ── CHALLENGE (FIXED) ──
             const challengeGrid = document.getElementById('challenge-grid');
             const apiMessage = document.getElementById('api-message');
 
@@ -1687,33 +1720,92 @@
             }
 
             async function generateChallenge() {
-                challengeGrid.innerHTML =
-                    '<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--text-secondary);">⏳ Generating...</div></div>';
+                // Show loading animation
+                challengeGrid.innerHTML = `
+                    <div class="challenge-card">
+                        <div class="challenge-loading">
+                            <div class="loader"></div>
+                            <div class="loader-text">Generating challenge<span class="loader-dots"></span></div>
+                        </div>
+                    </div>
+                `;
                 apiMessage.className = 'api-message';
 
                 try {
                     const data = await callApi('/api/challenge', {});
+                    
+                    // Validate the response
+                    if (!data.question || !data.ai_answer || !data.correct_answer || !data.explanation) {
+                        throw new Error('Invalid challenge data received');
+                    }
+                    
                     renderChallenge(data);
-                    showMessage('✅ Challenge generated!', 'success');
+                    showMessage('✅ Challenge generated! Can you spot the hallucination?', 'success');
                 } catch (err) {
-                    challengeGrid.innerHTML =
-                        `<div class="challenge-card"><div style="text-align:center;padding:1rem;color:var(--accent);">❌ ${err.message}</div></div>`;
-                    showMessage(`❌ Error: ${err.message}`, 'error');
+                    console.error('Challenge error:', err);
+                    // Show fallback challenge
+                    const fallback = getFallbackChallenge();
+                    renderChallenge(fallback);
+                    showMessage('⚠️ Using fallback challenge. The AI is learning!', 'error');
                 }
+            }
+
+            function getFallbackChallenge() {
+                const fallbacks = [
+                    {
+                        question: "Is the Great Wall of China visible from space?",
+                        ai_answer: "Yes, it's the only man-made structure visible from space.",
+                        correct_answer: "False",
+                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit. It's too narrow and blends with the terrain."
+                    },
+                    {
+                        question: "Do humans use only 10% of their brain?",
+                        ai_answer: "Yes, humans only use 10% of their brain capacity.",
+                        correct_answer: "False",
+                        explanation: "Brain imaging shows we use 100% of our brain, just not all at once. Different parts activate for different tasks."
+                    },
+                    {
+                        question: "Is the capital of Australia Sydney?",
+                        ai_answer: "Yes, Sydney is the capital of Australia.",
+                        correct_answer: "False",
+                        explanation: "The capital of Australia is Canberra, chosen in 1908 as a compromise between Sydney and Melbourne."
+                    },
+                    {
+                        question: "Does water boil at 100°C at sea level?",
+                        ai_answer: "No, water boils at 90°C at sea level.",
+                        correct_answer: "True",
+                        explanation: "At standard atmospheric pressure (sea level), water boils at exactly 100°C (212°F)."
+                    },
+                    {
+                        question: "Is the Earth the largest planet in our solar system?",
+                        ai_answer: "Yes, Earth is the largest planet in the solar system.",
+                        correct_answer: "False",
+                        explanation: "Jupiter is the largest planet. Earth is the fifth largest, after Jupiter, Saturn, Uranus, and Neptune."
+                    }
+                ];
+                return fallbacks[Math.floor(Math.random() * fallbacks.length)];
             }
 
             function renderChallenge(data) {
                 const card = document.createElement('div');
                 card.className = 'challenge-card';
-                const isCorrectTrue = data.correct_answer && (data.correct_answer.toLowerCase().includes('true') ||
-                    data.correct_answer.toLowerCase().includes('yes'));
+                
+                // Determine if correct answer is "True" or "False"
+                const correctText = data.correct_answer || 'True';
+                const isCorrectTrue = correctText.toLowerCase().includes('true') || 
+                                     correctText.toLowerCase().includes('yes');
 
                 card.innerHTML = `
                     <span class="status pending">❓ CHALLENGE</span>
-                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;">${data.question || 'No question'}</p>
-                    <div style="background:rgba(255,59,92,0.06);padding:0.6rem 0.8rem;border-radius:var(--radius-sm);border-left:3px solid var(--accent);margin-bottom:0.8rem;">
+                    <p style="font-weight:500;margin-bottom:0.7rem;font-size:1.05rem;color:var(--text-primary);">
+                        ${data.question || 'No question available'}
+                    </p>
+                    <div style="background:rgba(255,59,92,0.06);padding:0.8rem;border-radius:var(--radius-sm);border-left:3px solid var(--accent);margin-bottom:0.8rem;">
                         <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--accent);font-weight:700;">🤖 AI Says:</span>
-                        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.2rem;">${data.ai_answer || 'No answer'}</p>
+                        <p style="font-size:0.95rem;color:var(--text-primary);margin-top:0.2rem;">${data.ai_answer || 'No answer available'}</p>
+                    </div>
+                    <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted);margin-bottom:0.5rem;">
+                        ❓ Is the AI correct?
                     </div>
                     <div class="options">
                         <button data-choice="true">✅ True</button>
@@ -1722,9 +1814,9 @@
                     <div class="result-text" style="display:none;"></div>
                     <div class="reveal-answer">
                         <div class="label">✅ Correct Answer:</div>
-                        <p>${data.correct_answer || 'No correct answer'}</p>
+                        <p style="font-weight:bold;color:var(--green);">${correctText}</p>
                         <div class="label" style="color:var(--gold);margin-top:0.5rem;">📖 Explanation:</div>
-                        <p>${data.explanation || 'No explanation'}</p>
+                        <p>${data.explanation || 'No explanation available'}</p>
                     </div>
                 `;
                 challengeGrid.innerHTML = '';
@@ -1744,17 +1836,23 @@
                         const choice = this.dataset.choice === 'true';
                         const isCorrect = choice === isCorrectTrue;
 
-                        status.textContent = isCorrect ? '✅ CORRECT' : '❌ INCORRECT';
+                        status.textContent = isCorrect ? '✅ CORRECT!' : '❌ INCORRECT';
                         status.className = 'status ' + (isCorrect ? 'correct' : 'wrong');
                         result.style.display = 'block';
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
-                        result.textContent = isCorrect ? '✓ Correct!' : '✗ Not quite.';
+                        result.textContent = isCorrect ? 
+                            '✓ You got it right! The AI was ' + (isCorrectTrue ? 'correct' : 'incorrect') + '.' : 
+                            '✗ Not quite. The AI was ' + (isCorrectTrue ? 'correct' : 'incorrect') + '.';
                         revealDiv.style.display = 'block';
 
+                        // Highlight the correct answer button
                         btns.forEach(b => {
                             const v = b.dataset.choice === 'true';
-                            if (v === isCorrectTrue) b.classList.add('correct-choice');
-                            else if (b === this && !isCorrect) b.classList.add('wrong-choice');
+                            if (v === isCorrectTrue) {
+                                b.classList.add('correct-choice');
+                            } else if (b === this && !isCorrect) {
+                                b.classList.add('wrong-choice');
+                            }
                         });
                     });
                 });
