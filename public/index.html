@@ -765,7 +765,61 @@
             margin-right: 0.3rem;
         }
 
-        /* ── CHALLENGE SECTION (FIXED) ── */
+        /* ── Lab Loading Animation ── */
+        .lab-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0;
+            gap: 0.8rem;
+        }
+        .lab-loading .loader {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .lab-loading .loader-text {
+            color: var(--gold);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+        }
+        .lab-loading .loader-dots::after {
+            content: '';
+            animation: dots 1.5s steps(3) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+        
+        /* ── Thinking Animation ── */
+        .thinking-dots {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .thinking-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: thinkingDot 1.2s ease-in-out infinite;
+        }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinkingDot {
+            0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── CHALLENGE SECTION ── */
         .challenge-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -820,8 +874,6 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
-        
-        /* ── CHALLENGE AI ANSWER STYLES ── */
         .challenge-ai-answer {
             background: rgba(255, 59, 92, 0.06);
             padding: 0.8rem;
@@ -842,20 +894,6 @@
             color: var(--text-primary);
             line-height: 1.6;
         }
-        .challenge-ai-answer .ai-text .typing-cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1em;
-            background: var(--accent);
-            animation: blink 0.8s steps(1) infinite;
-            vertical-align: text-bottom;
-            margin-left: 2px;
-        }
-        @keyframes typingCursor {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-        
         .challenge-question-text {
             font-weight: 500;
             margin-bottom: 0.7rem;
@@ -869,7 +907,6 @@
             color: var(--text-muted);
             margin-bottom: 0.5rem;
         }
-        
         .challenge-card .options {
             display: flex;
             gap: 0.5rem;
@@ -1005,11 +1042,59 @@
             content: '';
             animation: dots 1.5s steps(3) infinite;
         }
-        @keyframes dots {
-            0% { content: ''; }
-            33% { content: '.'; }
-            66% { content: '..'; }
-            100% { content: '...'; }
+
+        /* ── Dashboard (Fixed) ── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 720px) {
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 0.8rem;
+            text-align: center;
+            transition: all var(--transition);
+            cursor: default;
+        }
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .stat-card .num {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: statNumPulse 3s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+        @keyframes statNumPulse {
+            0%, 100% { background: linear-gradient(135deg, var(--text-primary), var(--text-secondary)); }
+            50% { background: linear-gradient(135deg, var(--gold), var(--accent)); }
+        }
+        .stat-card .label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+        /* Dashboard counter animation */
+        .stat-card .num.count-up {
+            animation: countUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes countUp {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* ── Cases ── */
@@ -1132,48 +1217,6 @@
         }
         .flow-step h4 { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
         .flow-step p { font-size: 0.82rem; color: var(--text-secondary); }
-
-        /* ── Dashboard ── */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        @media (max-width: 720px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
-        .stat-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 1rem 0.8rem;
-            text-align: center;
-            transition: all var(--transition);
-        }
-        .stat-card:hover {
-            background: rgba(255, 255, 255, 0.04);
-            transform: translateY(-2px) scale(1.02);
-        }
-        .stat-card .num {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: statNumPulse 3s ease-in-out infinite;
-        }
-        @keyframes statNumPulse {
-            0%, 100% { background: linear-gradient(135deg, var(--text-primary), var(--text-secondary)); }
-            50% { background: linear-gradient(135deg, var(--gold), var(--accent)); }
-        }
-        .stat-card .label {
-            font-family: var(--font-mono);
-            font-size: 0.55rem;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            margin-top: 0.2rem;
-        }
 
         /* ── Footer ── */
         footer {
@@ -1302,7 +1345,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- LAB PAGE -->
+    <!-- LAB PAGE (FIXED DASHBOARD + GOD-TIER ANIMATIONS) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-lab">
         <div class="wrap">
@@ -1352,21 +1395,33 @@
                 </div>
             </div>
 
-            <!-- Dashboard -->
+            <!-- Dashboard (FIXED) -->
             <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:rgba(255,255,255,0.015);border-radius:var(--radius);border:1px solid var(--border);">
                 <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);letter-spacing:0.08em;margin-bottom:0.4rem;">📊 LIVE DASHBOARD</div>
                 <div class="dashboard-grid">
-                    <div class="stat-card"><div class="num" id="dash-questions">0</div><div class="label">Questions Tested</div></div>
-                    <div class="stat-card"><div class="num" id="dash-claims">0</div><div class="label">Claims Examined</div></div>
-                    <div class="stat-card"><div class="num" id="dash-unsupported">0</div><div class="label">Unsupported Claims</div></div>
-                    <div class="stat-card"><div class="num" id="dash-error">0%</div><div class="label">Error Rate</div></div>
+                    <div class="stat-card">
+                        <div class="num" id="dash-questions">0</div>
+                        <div class="label">Questions Tested</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="dash-claims">0</div>
+                        <div class="label">Claims Examined</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="dash-unsupported">0</div>
+                        <div class="label">Unsupported Claims</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" id="dash-error">0%</div>
+                        <div class="label">Error Rate</div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- CHALLENGE PAGE (FIXED - DETAILED AI ANSWER FIRST) -->
+    <!-- CHALLENGE PAGE -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-challenge" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
         <div class="wrap">
@@ -1709,11 +1764,22 @@
                 }
             }
 
+            // ─── Show loading animation in lab ───
+            function showLabLoading() {
+                const labA = document.getElementById('lab-a');
+                labA.innerHTML = `
+                    <div class="lab-loading">
+                        <div class="loader"></div>
+                        <div class="loader-text">AI is thinking<span class="loader-dots"></span></div>
+                    </div>
+                `;
+            }
+
             async function askAI(question) {
                 if (!question) return;
                 currentQuestion = question;
                 labQ.textContent = question;
-                labA.textContent = '⏳ Thinking...';
+                showLabLoading();
                 labConf.style.display = 'none';
                 labXray.style.display = 'none';
                 xrayBtn.disabled = true;
@@ -1812,15 +1878,36 @@
             });
             customInput.addEventListener('keydown', e => { if (e.key === 'Enter') askBtn.click(); });
 
+            // ─── DASHBOARD (FIXED - updates with animation) ───
             function updateDashboard() {
-                document.getElementById('dash-questions').textContent = dashQ;
-                document.getElementById('dash-claims').textContent = dashC;
-                document.getElementById('dash-unsupported').textContent = dashU;
+                const questionsEl = document.getElementById('dash-questions');
+                const claimsEl = document.getElementById('dash-claims');
+                const unsupportedEl = document.getElementById('dash-unsupported');
+                const errorEl = document.getElementById('dash-error');
+
+                // Animate number changes
+                animateNumber(questionsEl, dashQ);
+                animateNumber(claimsEl, dashC);
+                animateNumber(unsupportedEl, dashU);
+                
                 const rate = dashC > 0 ? Math.round((dashU / dashC) * 100) : 0;
-                document.getElementById('dash-error').textContent = rate + '%';
+                errorEl.textContent = rate + '%';
+                errorEl.classList.remove('count-up');
+                void errorEl.offsetWidth;
+                errorEl.classList.add('count-up');
             }
 
-            // ── CHALLENGE (FIXED - DETAILED AI ANSWER FIRST) ──
+            function animateNumber(element, target) {
+                const current = parseInt(element.textContent) || 0;
+                if (current === target) return;
+                
+                element.classList.remove('count-up');
+                void element.offsetWidth;
+                element.textContent = target;
+                element.classList.add('count-up');
+            }
+
+            // ── CHALLENGE ──
             const challengeGrid = document.getElementById('challenge-grid');
             const apiMessage = document.getElementById('api-message');
 
@@ -1833,7 +1920,6 @@
             }
 
             async function generateChallenge() {
-                // Show loading animation
                 challengeGrid.innerHTML = `
                     <div class="challenge-card">
                         <div class="challenge-loading">
@@ -1867,47 +1953,28 @@
                         question: "Is the Great Wall of China visible from space?",
                         ai_answer: "Yes, it's the only man-made structure visible from space with the naked eye. Astronauts can clearly see it from the International Space Station.",
                         correct_answer: "False",
-                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit. It's too narrow and blends with the terrain. This is a persistent myth."
+                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit. It's too narrow and blends with the terrain."
                     },
                     {
                         question: "Do humans use only 10% of their brain?",
-                        ai_answer: "Yes, humans only use 10% of their brain capacity. The other 90% is dormant and unused, which is why we have so much untapped potential.",
+                        ai_answer: "Yes, humans only use 10% of their brain capacity. The other 90% is dormant and unused.",
                         correct_answer: "False",
-                        explanation: "Brain imaging shows we use 100% of our brain, just not all at once. Different parts activate for different tasks. This myth has been debunked by neuroscience."
+                        explanation: "Brain imaging shows we use 100% of our brain, just not all at once."
                     },
                     {
                         question: "Is the capital of Australia Sydney?",
-                        ai_answer: "Yes, Sydney is the capital of Australia. It's the largest and most famous city, home to the iconic Sydney Opera House and Harbour Bridge.",
+                        ai_answer: "Yes, Sydney is the capital of Australia. It's the largest and most famous city.",
                         correct_answer: "False",
-                        explanation: "The capital of Australia is Canberra, chosen in 1908 as a compromise between Sydney and Melbourne. Sydney is the largest city but not the capital."
+                        explanation: "The capital of Australia is Canberra, chosen in 1908 as a compromise between Sydney and Melbourne."
                     },
                     {
                         question: "Does water boil at 100°C at sea level?",
-                        ai_answer: "No, water boils at 90°C at sea level. The boiling point varies significantly based on atmospheric pressure and altitude.",
+                        ai_answer: "No, water boils at 90°C at sea level. The boiling point varies significantly.",
                         correct_answer: "True",
-                        explanation: "At standard atmospheric pressure (sea level), pure water boils at exactly 100°C (212°F). The AI is wrong in this case."
+                        explanation: "At standard atmospheric pressure (sea level), pure water boils at exactly 100°C (212°F)."
                     }
                 ];
                 return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-            }
-
-            function typeAnswer(element, text, speed = 15, callback) {
-                let i = 0;
-                element.innerHTML = '';
-                const cursor = document.createElement('span');
-                cursor.className = 'typing-cursor';
-                cursor.textContent = '';
-                
-                function step() {
-                    if (i <= text.length) {
-                        element.textContent = text.slice(0, i);
-                        i++;
-                        setTimeout(step, speed);
-                    } else {
-                        if (callback) callback();
-                    }
-                }
-                step();
             }
 
             function renderChallenge(data) {
@@ -1945,12 +2012,8 @@
                 const aiTextEl = document.getElementById('challenge-ai-text');
                 if (aiTextEl) {
                     const fullText = data.ai_answer || 'No answer available';
-                    // Start with empty and type it out
                     aiTextEl.textContent = '';
                     let i = 0;
-                    const cursor = document.createElement('span');
-                    cursor.className = 'typing-cursor';
-                    cursor.textContent = '';
                     
                     function typeStep() {
                         if (i <= fullText.length) {
@@ -1981,11 +2044,10 @@
                         result.style.display = 'block';
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
                         result.textContent = isCorrect ? 
-                            '✓ You got it right! The AI was ' + (isCorrectTrue ? 'correct' : 'incorrect') + '.' : 
-                            '✗ Not quite. The AI was ' + (isCorrectTrue ? 'correct' : 'incorrect') + '.';
+                            '✓ You got it right!' : 
+                            '✗ Not quite.';
                         revealDiv.style.display = 'block';
 
-                        // Highlight the correct answer button
                         btns.forEach(b => {
                             const v = b.dataset.choice === 'true';
                             if (v === isCorrectTrue) {
