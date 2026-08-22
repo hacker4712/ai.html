@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Confidently Wrong · AI Fact-Check Lab</title>
-    <meta name="description" content="Class 12 science exhibition — celebrating mistakes through AI hallucination." />
+    <meta name="description" content="Class 12 science exhibition — fact-check AI claims with real-world sources." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -143,21 +143,15 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--accent), #ff6b83);
             color: #fff;
-            animation: btnPulse 2s ease-in-out infinite;
-        }
-        @keyframes btnPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255,59,92,0.3); }
-            50% { box-shadow: 0 0 50px rgba(255,59,92,0.6); }
         }
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 0 60px var(--accent-glow);
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px var(--accent-glow);
         }
         .btn-primary:disabled {
             opacity: 0.3;
             cursor: default;
             transform: none !important;
-            animation: none;
         }
         .btn-secondary {
             background: rgba(255, 255, 255, 0.04);
@@ -282,18 +276,6 @@
             min-height: 70vh;
             display: flex;
             align-items: center;
-        }
-        .hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 50%, rgba(255,59,92,0.03), transparent 70%);
-            animation: heroBgPulse 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-        @keyframes heroBgPulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.5); opacity: 1; }
         }
         .hero .wrap { position: relative; z-index: 2; }
         .hero-grid {
@@ -589,7 +571,7 @@
             border-color: rgba(255, 198, 43, 0.3);
         }
 
-        /* ── X-Ray Claims ── */
+        /* ── X-Ray Claims with REAL SOURCES ── */
         .xray-claims {
             display: flex;
             flex-direction: column;
@@ -653,6 +635,7 @@
             color: var(--text-muted);
             margin-top: 0.15rem;
         }
+        /* ── REAL WORLD SOURCES ── */
         .xray-claim .sources {
             display: flex;
             flex-wrap: wrap;
@@ -673,16 +656,28 @@
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
+            word-break: break-all;
         }
         .xray-claim .source-link:hover {
             background: rgba(46, 204, 113, 0.2);
             transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(46,204,113,0.2);
         }
+        .xray-claim .source-link .link-icon { font-size: 0.65rem; }
         .sources-label {
             font-family: var(--font-mono);
             font-size: 0.55rem;
             color: var(--text-muted);
             margin-right: 0.3rem;
+        }
+        .xray-claim .source-link.unsupported-source {
+            background: rgba(255, 59, 92, 0.1);
+            border-color: rgba(255, 59, 92, 0.2);
+            color: var(--accent);
+        }
+        .xray-claim .source-link.unsupported-source:hover {
+            background: rgba(255, 59, 92, 0.2);
+            color: #ff6b83;
         }
 
         /* ── Lab Loading Animation ── */
@@ -894,10 +889,6 @@
             font-family: var(--font-mono);
             font-size: 0.8rem;
             letter-spacing: 0.08em;
-        }
-        .challenge-loading .loader-dots::after {
-            content: '';
-            animation: dots 1.5s steps(3) infinite;
         }
 
         /* ── Dashboard ── */
@@ -1176,7 +1167,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- LAB PAGE (DASHBOARD FIXED) -->
+    <!-- LAB PAGE (WITH REAL-WORLD SOURCES) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-lab">
         <div class="wrap">
@@ -1226,7 +1217,7 @@
                 </div>
             </div>
 
-            <!-- LIVE DASHBOARD (FIXED - NUMBERS VISIBLE) -->
+            <!-- LIVE DASHBOARD -->
             <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:rgba(255,255,255,0.015);border-radius:var(--radius);border:1px solid var(--border);">
                 <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--gold);letter-spacing:0.08em;margin-bottom:0.4rem;">📊 LIVE DASHBOARD</div>
                 <div class="dashboard-grid">
@@ -1501,44 +1492,78 @@
                 dashC = 0,
                 dashU = 0;
 
-            // ─── SOURCE DATABASE ───
-            const sourceDatabase = {
-                'edison invented': [
-                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
-                    { title: 'Edison Papers Project - Rutgers University', url: 'https://edison.rutgers.edu/' }
+            // ─── REAL-WORLD ACCESSIBLE SOURCES ───
+            const realSources = {
+                'edison invented light bulb': [
+                    { title: 'US Patent 223,898 - Thomas Edison (1880)', url: 'https://patents.google.com/patent/US223898A/en' },
+                    { title: 'Smithsonian Institution - Edison\'s Light Bulb', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' },
+                    { title: 'Library of Congress - Edison Papers', url: 'https://www.loc.gov/collections/thomas-edison-papers/' }
                 ],
-                'light bulb': [
-                    { title: 'US Patent 223,898 (1880) - Thomas Edison', url: 'https://patents.google.com/patent/US223898A/en' },
-                    { title: 'Smithsonian - The Electric Light System', url: 'https://www.si.edu/object/thomas-edisons-light-bulb' }
-                ],
-                'shark': [
+                'shark bones': [
                     { title: 'NOAA Fisheries - Shark Anatomy', url: 'https://www.fisheries.noaa.gov/national/outreach-and-education/shark-anatomy' },
-                    { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' }
+                    { title: 'Smithsonian Ocean - Shark Skeletons', url: 'https://ocean.si.edu/ocean-life/sharks-rays/shark-anatomy' },
+                    { title: 'Australian Museum - Shark Biology', url: 'https://australian.museum/learn/animals/fishes/sharks/' }
                 ],
-                'einstein': [
-                    { title: 'Albert Einstein Archives', url: 'https://www.albert-einstein.org/education.html' },
-                    { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' }
+                'einstein failed math': [
+                    { title: 'Albert Einstein Archives - Early Education', url: 'https://www.albert-einstein.org/education.html' },
+                    { title: 'Nobel Prize Biography - Albert Einstein', url: 'https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/' },
+                    { title: 'Scientific American - Einstein Myths', url: 'https://www.scientificamerican.com/article/einstein-failed-math-myth/' }
                 ],
                 'mount everest': [
                     { title: 'USGS - Mount Everest Fact Sheet', url: 'https://www.usgs.gov/centers/national-geospatial-program/mount-everest' },
-                    { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' }
+                    { title: 'National Geographic - Everest', url: 'https://www.nationalgeographic.com/expeditions/destinations/asia/everest/' },
+                    { title: 'Nepal Tourism Board - Everest', url: 'https://www.welcomenepal.com/places-to-see/mount-everest.html' }
                 ],
-                'australia': [
+                'capital of australia': [
                     { title: 'Australian Government - About Canberra', url: 'https://www.australia.gov.au/about-australia/our-country/our-capital-cities' },
-                    { title: 'Parliament of Australia - Canberra', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' }
+                    { title: 'Parliament of Australia - Canberra History', url: 'https://www.aph.gov.au/About_Parliament/Parliamentary_Departments/Parliamentary_Library/parliamentary_handbook/Canberra' },
+                    { title: 'Visit Canberra - Official Tourism', url: 'https://visitcanberra.com.au/' }
+                ],
+                'great wall visible from space': [
+                    { title: 'NASA - Great Wall from Space', url: 'https://www.nasa.gov/vision/space/workinginspace/great_wall.html' },
+                    { title: 'National Geographic - Great Wall Myth', url: 'https://www.nationalgeographic.com/travel/article/see-great-wall-of-china-from-space' },
+                    { title: 'BBC - Great Wall Space Myth', url: 'https://www.bbc.com/news/magazine-19190570' }
+                ],
+                'brain 10 percent': [
+                    { title: 'Scientific American - 10% Brain Myth', url: 'https://www.scientificamerican.com/article/do-we-really-use-only-10-percent-of-our-brain/' },
+                    { title: 'Psychology Today - Brain Myth Debunked', url: 'https://www.psychologytoday.com/us/blog/the-fallible-mind/201712/the-10-brain-myth' },
+                    { title: 'Mayo Clinic - Brain Function', url: 'https://www.mayoclinic.org/healthy-lifestyle/consumer-health/expert-answers/brain/faq-20058384' }
+                ],
+                'bulls red': [
+                    { title: 'Live Science - Bulls and Red', url: 'https://www.livescience.com/33260-are-bulls-angered-by-red-color.html' },
+                    { title: 'Scientific American - Bull Myth', url: 'https://www.scientificamerican.com/article/fact-or-fiction-bulls-hate-red/' },
+                    { title: 'National Geographic - Bullfighting', url: 'https://www.nationalgeographic.com/animals/article/bullfighting-spain' }
+                ],
+                'napoleon short': [
+                    { title: 'History.com - Napoleon Height', url: 'https://www.history.com/news/was-napoleon-short' },
+                    { title: 'BBC - Napoleon Myth', url: 'https://www.bbc.com/news/magazine-18554470' },
+                    { title: 'Smithsonian Magazine - Napoleon\'s Height', url: 'https://www.smithsonianmag.com/smart-news/napoleon-wasnt-short-after-all-180957693/' }
+                ],
+                'vikings horned helmets': [
+                    { title: 'History.com - Viking Helmets', url: 'https://www.history.com/news/did-vikings-really-wear-horned-helmets' },
+                    { title: 'Smithsonian Magazine - Viking Helmet Myth', url: 'https://www.smithsonianmag.com/smart-news/the-myth-of-the-viking-horned-helmet-180951817/' },
+                    { title: 'BBC - Viking Facts', url: 'https://www.bbc.co.uk/history/ancient/vikings/weapons_01.shtml' }
+                ],
+                'water boils 100': [
+                    { title: 'USGS - Water Properties', url: 'https://www.usgs.gov/special-topics/water-science-school/science/water-properties' },
+                    { title: 'National Institute of Standards and Technology (NIST)', url: 'https://www.nist.gov/' },
+                    { title: 'Encyclopedia Britannica - Boiling Point', url: 'https://www.britannica.com/science/boiling-point' }
                 ]
             };
 
-            function getSourcesForClaim(claimText) {
+            function getRealSources(claimText) {
                 const lowerClaim = claimText.toLowerCase();
-                for (const [key, sources] of Object.entries(sourceDatabase)) {
-                    if (lowerClaim.includes(key) || key.includes(lowerClaim)) {
+                for (const [key, sources] of Object.entries(realSources)) {
+                    if (lowerClaim.includes(key) || key.includes(lowerClaim) || 
+                        lowerClaim.split(' ').some(word => key.includes(word) && word.length > 3)) {
                         return sources;
                     }
                 }
+                // Default real-world sources
                 return [
-                    { title: 'Wikipedia - AI Hallucination', url: 'https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)' },
-                    { title: 'OpenAI Research Papers', url: 'https://openai.com/research' }
+                    { title: 'Google Search - Find More Information', url: 'https://www.google.com/search?q=' + encodeURIComponent(claimText) },
+                    { title: 'Snopes - Fact Check', url: 'https://www.snopes.com/fact-check/' },
+                    { title: 'Wikipedia - General Reference', url: 'https://en.wikipedia.org/wiki/Main_Page' }
                 ];
             }
 
@@ -1657,19 +1682,21 @@
                         header.appendChild(t);
                         d.appendChild(header);
 
+                        // ─── ADD REAL-WORLD SOURCES ───
                         const sourcesDiv = document.createElement('div');
                         sourcesDiv.className = 'sources';
                         const label = document.createElement('span');
                         label.className = 'sources-label';
-                        label.textContent = '📚 Sources:';
+                        label.textContent = '📚 Real-World Sources:';
                         sourcesDiv.appendChild(label);
 
-                        const sources = getSourcesForClaim(c.text);
+                        const sources = getRealSources(c.text);
+                        const isUnsupported = c.status === 'unsupported';
                         sources.forEach(src => {
                             const link = document.createElement('a');
                             link.href = src.url;
                             link.target = '_blank';
-                            link.className = 'source-link';
+                            link.className = `source-link${isUnsupported ? ' unsupported-source' : ''}`;
                             link.innerHTML = `<span class="link-icon">🔗</span> ${src.title}`;
                             sourcesDiv.appendChild(link);
                         });
@@ -1682,7 +1709,6 @@
                     labCorrection.textContent = `Found ${unsupportedCount} unsupported claim(s).`;
 
                     if (unsupportedCount > 0) {
-                        // ─── UPDATE DASHBOARD ───
                         dashQ++;
                         dashC += claims.length;
                         dashU += unsupportedCount;
@@ -1710,7 +1736,6 @@
             });
             customInput.addEventListener('keydown', e => { if (e.key === 'Enter') askBtn.click(); });
 
-            // ─── UPDATE DASHBOARD ───
             function updateDashboard() {
                 document.getElementById('dash-questions').textContent = dashQ;
                 document.getElementById('dash-claims').textContent = dashC;
@@ -1719,7 +1744,7 @@
                 document.getElementById('dash-error').textContent = rate + '%';
             }
 
-            // ─── CHALLENGE ──
+            // ── CHALLENGE ──
             const challengeGrid = document.getElementById('challenge-grid');
             const apiMessage = document.getElementById('api-message');
 
