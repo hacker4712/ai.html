@@ -891,6 +891,18 @@
             letter-spacing: 0.08em;
         }
 
+        .fresh-badge {
+            font-size: 0.55rem;
+            color: var(--green);
+            font-family: var(--font-mono);
+            background: var(--green-glow);
+            padding: 0.15rem 0.7rem;
+            border-radius: 1rem;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(46,204,113,0.2);
+        }
+
         /* ── Dashboard ── */
         .dashboard-grid {
             display: grid;
@@ -1243,7 +1255,7 @@
     </section>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- CHALLENGE PAGE -->
+    <!-- CHALLENGE PAGE (FIXED) -->
     <!-- ════════════════════════════════════════════════ -->
     <section id="page-challenge" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
         <div class="wrap">
@@ -1252,6 +1264,7 @@
             <p class="lede">Read the AI's detailed answer, then decide if it's TRUE or FALSE. The AI may be confidently wrong!</p>
             <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
                 <button class="btn btn-primary" id="new-challenge-btn">🔄 Generate New Challenge</button>
+                <span style="color:var(--text-muted);font-size:0.7rem;display:flex;align-items:center;">✨ AI generates fresh questions every time</span>
             </div>
             <div id="api-message" class="api-message"></div>
             <div class="challenge-grid" id="challenge-grid">
@@ -1559,7 +1572,6 @@
                         return sources;
                     }
                 }
-                // Default real-world sources
                 return [
                     { title: 'Google Search - Find More Information', url: 'https://www.google.com/search?q=' + encodeURIComponent(claimText) },
                     { title: 'Snopes - Fact Check', url: 'https://www.snopes.com/fact-check/' },
@@ -1682,7 +1694,6 @@
                         header.appendChild(t);
                         d.appendChild(header);
 
-                        // ─── ADD REAL-WORLD SOURCES ───
                         const sourcesDiv = document.createElement('div');
                         sourcesDiv.className = 'sources';
                         const label = document.createElement('span');
@@ -1744,7 +1755,7 @@
                 document.getElementById('dash-error').textContent = rate + '%';
             }
 
-            // ── CHALLENGE ──
+            // ── CHALLENGE (FIXED) ──
             const challengeGrid = document.getElementById('challenge-grid');
             const apiMessage = document.getElementById('api-message');
 
@@ -1761,57 +1772,77 @@
                     <div class="challenge-card">
                         <div class="challenge-loading">
                             <div class="loader"></div>
-                            <div class="loader-text">AI is thinking<span class="loader-dots"></span></div>
+                            <div class="loader-text">AI is generating a fresh question<span class="loader-dots"></span></div>
                         </div>
                     </div>
                 `;
                 apiMessage.className = 'api-message';
 
                 try {
-                    const data = await callApi('/api/challenge', {});
+                    const url = `${API_BASE}/api/challenge`;
+                    console.log('🔄 Fetching fresh challenge from:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📥 Challenge data received:', data);
                     
                     if (!data.question || !data.ai_answer || !data.correct_answer || !data.explanation) {
                         throw new Error('Invalid challenge data received');
                     }
                     
                     renderChallenge(data);
-                    showMessage('✅ Challenge ready! Read the AI\'s answer carefully.', 'success');
+                    showMessage('✅ Fresh challenge ready! Read the AI\'s answer carefully.', 'success');
                 } catch (err) {
                     console.error('Challenge error:', err);
-                    const fallback = getFallbackChallenge();
-                    renderChallenge(fallback);
-                    showMessage('⚠️ Using fallback challenge. The AI is learning!', 'error');
-                }
-            }
-
-            function getFallbackChallenge() {
-                const fallbacks = [
-                    {
-                        question: "Is the Great Wall of China visible from space?",
-                        ai_answer: "Yes, it's the only man-made structure visible from space with the naked eye.",
-                        correct_answer: "False",
-                        explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit."
-                    },
-                    {
-                        question: "Do humans use only 10% of their brain?",
-                        ai_answer: "Yes, humans only use 10% of their brain capacity.",
-                        correct_answer: "False",
-                        explanation: "Brain imaging shows we use 100% of our brain, just not all at once."
-                    },
-                    {
-                        question: "Is the capital of Australia Sydney?",
-                        ai_answer: "Yes, Sydney is the capital of Australia.",
-                        correct_answer: "False",
-                        explanation: "The capital of Australia is Canberra, chosen in 1908."
-                    },
-                    {
-                        question: "Does water boil at 100°C at sea level?",
-                        ai_answer: "No, water boils at 90°C at sea level.",
-                        correct_answer: "True",
-                        explanation: "At standard atmospheric pressure, water boils at exactly 100°C."
+                    showMessage('⚠️ Error generating challenge: ' + err.message, 'error');
+                    
+                    // Try to recover with a retry
+                    try {
+                        console.log('🔄 Retrying challenge generation...');
+                        const retryResponse = await fetch(`${API_BASE}/api/challenge`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ retry: true })
+                        });
+                        if (retryResponse.ok) {
+                            const retryData = await retryResponse.json();
+                            if (retryData.question && retryData.ai_answer) {
+                                renderChallenge(retryData);
+                                showMessage('✅ Challenge generated on retry!', 'success');
+                                return;
+                            }
+                        }
+                    } catch (retryErr) {
+                        console.error('Retry failed:', retryErr);
                     }
-                ];
-                return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                    
+                    // If all fails, show error state
+                    challengeGrid.innerHTML = `
+                        <div class="challenge-card" style="border-color:var(--accent);">
+                            <div style="text-align:center;padding:1rem;">
+                                <div style="font-size:2rem;margin-bottom:0.5rem;">⚠️</div>
+                                <div style="color:var(--accent);font-weight:bold;">Failed to generate challenge</div>
+                                <div style="color:var(--text-secondary);font-size:0.8rem;margin-top:0.5rem;">
+                                    ${err.message || 'Please try again'}
+                                </div>
+                                <button class="btn btn-primary" onclick="generateChallenge()" 
+                                        style="margin-top:1rem;padding:0.5rem 1.5rem;">
+                                    🔄 Try Again
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             function renderChallenge(data) {
@@ -1823,6 +1854,7 @@
                                      correctText.toLowerCase().includes('yes');
 
                 card.innerHTML = `
+                    <div class="fresh-badge">✨ Freshly generated</div>
                     <span class="status pending">🤖 CHALLENGE</span>
                     <div class="challenge-question-text">${data.question || 'No question available'}</div>
                     <div class="challenge-ai-answer">
@@ -1882,7 +1914,7 @@
                         result.className = 'result-text ' + (isCorrect ? 'correct' : 'wrong');
                         result.textContent = isCorrect ? 
                             '✓ You got it right!' : 
-                            '✗ Not quite.';
+                            '✗ Not quite. The AI was confidently wrong!';
                         revealDiv.style.display = 'block';
 
                         btns.forEach(b => {
@@ -1901,7 +1933,7 @@
 
             // ── INIT ──
             checkHealth();
-            setTimeout(generateChallenge, 500);
+            setTimeout(generateChallenge, 800);
             askAI('Who invented the light bulb?');
             document.querySelector('.chip[data-q="Who invented the light bulb?"]').classList.add('active');
             setInterval(checkHealth, 30000);
