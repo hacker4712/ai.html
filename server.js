@@ -34,16 +34,6 @@ if (!fs.existsSync(indexPath)) {
     fs.writeFileSync(indexPath, fallbackHTML);
 }
 
-// ─── SERVE SCANNER.JS ───
-app.get('/scanner.js', (req, res) => {
-    const scannerPath = path.join(__dirname, 'public', 'scanner.js');
-    if (fs.existsSync(scannerPath)) {
-        res.sendFile(scannerPath);
-    } else {
-        res.status(404).json({ error: 'scanner.js not found' });
-    }
-});
-
 // ─── NVIDIA NIM API KEY ───
 const HARDCODED_KEY = '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';
 const API_KEY = process.env.NVIDIA_API_KEY || HARDCODED_KEY;
@@ -226,57 +216,19 @@ app.post('/api/challenge', async (req, res) => {
     }
 
     const prompt = `Generate a tricky trivia question about a common misconception OR a well-known fact.
-    
     The question should be interesting and not too obvious.
-    
     IMPORTANT: The answer should SOMETIMES be TRUE and SOMETIMES be FALSE - mix it up!
     - About 50% of the time the AI should give a CORRECT answer
     - About 50% of the time the AI should give an INCORRECT answer (hallucination)
-    
     The AI should deliver the answer confidently regardless of whether it's correct or not.
-    
     For the CORRECT ANSWER, you MUST use the actual correct answer (True or False) based on real facts.
     Do NOT make up facts. Only use information you are 100% certain about.
-    If you are unsure about any fact, do NOT use it.
-    
-    IMPORTANT RULES:
-    1. The "correct_answer" field MUST be the TRUE factual answer
-    2. The "ai_answer" field can be either true OR false (your choice, mix it up)
-    3. Only use facts you are confident about
-    4. Avoid these overused myths: 10% brain, Great Wall visible from space, bulls hate red, Napoleon was short, Vikings horned helmets
-    
-    Return ONLY valid JSON with NO extra text, NO markdown, NO code blocks. Just the JSON object.
-    
-    Format:
-    {
-        "question": "The trivia question",
-        "ai_answer": "The AI's confident answer (can be true or false - mix it up!)",
-        "correct_answer": "True or False (MUST be the actual correct answer)",
-        "explanation": "Clear explanation with verified facts"
-    }
-    
-    Example correct format (AI is correct):
-    {
-        "question": "Do adult humans have 206 bones?",
-        "ai_answer": "Yes, adult humans have exactly 206 bones.",
-        "correct_answer": "True",
-        "explanation": "Adult humans have 206 bones. This is a well-established anatomical fact."
-    }
-    
-    Example incorrect format (AI is hallucinating):
-    {
-        "question": "Do adult humans have 206 bones?",
-        "ai_answer": "No, adult humans have 200 bones.",
-        "correct_answer": "True",
-        "explanation": "The AI is wrong here. Adult humans actually have 206 bones, not 200."
-    }`;
+    Return ONLY valid JSON: { "question": "...", "ai_answer": "...", "correct_answer": "True or False", "explanation": "..." }`;
 
     try {
-        const result = await generateJSON(prompt, 0.8, 700);
+        const result = await generateJSON(prompt, 0.8, 600);
         
-        // Validate the response
         if (result.question && result.ai_answer && result.correct_answer && result.explanation) {
-            // Ensure correct_answer is properly formatted as "True" or "False"
             const correct = result.correct_answer.toLowerCase();
             if (correct === 'true' || correct === 'false') {
                 result.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
@@ -286,45 +238,26 @@ app.post('/api/challenge', async (req, res) => {
             }
         }
         
-        // If validation fails, try a second time with a simpler prompt
-        console.log('⚠️ Invalid format, retrying...');
-        const retryPrompt = `Generate a simple trivia question. 
-        The question MUST be about a well-known fact. 
-        Return JSON with: question, ai_answer (can be true or false), correct_answer (must be "True" or "False"), explanation.
-        Use a random true/false mix.
-        Example: { "question": "Is the Earth flat?", "ai_answer": "Yes, the Earth is flat.", "correct_answer": "False", "explanation": "The Earth is actually an oblate spheroid." }`;
-        
-        const retryResult = await generateJSON(retryPrompt, 0.8, 500);
-        if (retryResult.question && retryResult.ai_answer && retryResult.correct_answer && retryResult.explanation) {
-            const correct = retryResult.correct_answer.toLowerCase();
-            if (correct === 'true' || correct === 'false') {
-                retryResult.correct_answer = correct.charAt(0).toUpperCase() + correct.slice(1);
-                console.log('✅ Retry succeeded:', retryResult.question);
-                res.json(retryResult);
-                return;
-            }
-        }
-        
-        // If still invalid, return a simple known fact as fallback
-        console.log('⚠️ All retries failed, sending fallback');
+        // Fallback challenges
+        console.log('⚠️ Using fallback challenge');
         const fallbacks = [
             {
-                question: "Does water freeze at 0°C (32°F) at sea level?",
-                ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-                correct_answer: "True",
-                explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
+                question: "Is the Great Wall of China visible from space?",
+                ai_answer: Math.random() > 0.5 ? "Yes, it's visible with the naked eye." : "No, it's not visible.",
+                correct_answer: "False",
+                explanation: "NASA confirms the Great Wall is not visible to the unaided eye from orbit."
             },
             {
-                question: "Is the Earth the largest planet in our solar system?",
-                ai_answer: Math.random() > 0.5 ? "Yes, Earth is the largest planet." : "No, Jupiter is the largest planet.",
+                question: "Do humans use only 10% of their brain?",
+                ai_answer: Math.random() > 0.5 ? "Yes, we only use 10%." : "No, we use 100%.",
                 correct_answer: "False",
-                explanation: "Jupiter is the largest planet in our solar system. Earth is the fifth largest."
+                explanation: "Brain imaging shows we use 100% of our brain, just not all at once."
             },
             {
-                question: "Do sharks have bones?",
-                ai_answer: Math.random() > 0.5 ? "Yes, sharks have 206 bones." : "No, sharks have no bones.",
+                question: "Is the capital of Australia Sydney?",
+                ai_answer: Math.random() > 0.5 ? "Yes, Sydney is the capital." : "No, Canberra is the capital.",
                 correct_answer: "False",
-                explanation: "Sharks have no bones. Their skeletons are made entirely of cartilage."
+                explanation: "The capital of Australia is Canberra, chosen in 1908."
             }
         ];
         const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
@@ -332,14 +265,87 @@ app.post('/api/challenge', async (req, res) => {
         
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        // Return a simple fallback
-        const fallback = {
-            question: "Does water freeze at 0°C (32°F) at sea level?",
-            ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-            correct_answer: "True",
-            explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
+        res.json({
+            question: "Is the Earth flat?",
+            ai_answer: Math.random() > 0.5 ? "Yes, the Earth is flat." : "No, the Earth is round.",
+            correct_answer: "False",
+            explanation: "The Earth is actually an oblate spheroid."
+        });
+    }
+});
+
+// ════════════════════════════════════════════════
+//  🔍 NEW: DUCKDUCKGO FACT-CHECK API
+// ════════════════════════════════════════════════
+
+// ─── FACT-CHECK WITH DUCKDUCKGO API ───
+app.post('/api/fact-check', async (req, res) => {
+    const { claim } = req.body;
+    
+    if (!claim) {
+        return res.status(400).json({ error: 'Claim is required' });
+    }
+
+    try {
+        console.log(`🔍 Fact-checking: "${claim}"`);
+        
+        // Call DuckDuckGo Instant Answer API (FREE, NO API KEY NEEDED)
+        const response = await fetch(
+            `https://api.duckduckgo.com/?q=${encodeURIComponent(claim)}&format=json&no_html=1&skip_disambig=1`
+        );
+        
+        const data = await response.json();
+        
+        // Extract the fact and source
+        const fact = data.Abstract || null;
+        const source = data.AbstractSource || null;
+        const sourceUrl = data.AbstractURL || null;
+        const image = data.Image || null;
+        
+        // If no direct answer, try to get from RelatedTopics
+        let relatedSources = [];
+        if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+            relatedSources = data.RelatedTopics
+                .filter(topic => topic.FirstURL && topic.Text)
+                .slice(0, 3)
+                .map(topic => ({
+                    title: topic.Text ? topic.Text.replace(/<[^>]*>/g, '').substring(0, 100) : 'Related Link',
+                    url: topic.FirstURL || '#'
+                }));
+        }
+        
+        // Also check Infobox for additional facts
+        let infoboxFacts = [];
+        if (data.Infobox && data.Infobox.content) {
+            infoboxFacts = data.Infobox.content
+                .filter(item => item.label && item.value)
+                .slice(0, 5)
+                .map(item => ({
+                    label: item.label,
+                    value: item.value
+                }));
+        }
+        
+        const result = {
+            fact: fact,
+            source: source,
+            sourceUrl: sourceUrl,
+            image: image,
+            relatedSources: relatedSources,
+            infoboxFacts: infoboxFacts,
+            hasAnswer: fact !== null,
+            raw: data // For debugging
         };
-        res.json(fallback);
+        
+        console.log(`✅ Fact-check result: ${fact ? 'Found' : 'Not found'}`);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('DuckDuckGo API Error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch fact-check data',
+            details: error.message
+        });
     }
 });
 
@@ -360,5 +366,6 @@ app.listen(PORT, () => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
     console.log(`📦 Cache: Enabled`);
-    console.log(`🎯 Challenge Mode: Mixed True/False with AI generation`);
+    console.log(`🎯 Challenge Mode: Mixed True/False with fallbacks`);
+    console.log(`🔍 Fact-Check API: DuckDuckGo (Free, No API Key)`);
 });
