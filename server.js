@@ -71,6 +71,10 @@ const FREE_MODEL = 'meta/llama-3.1-70b-instruct';
 const cache = new Map();
 const CACHE_TTL = 3600000;
 
+// ─── TRACK USED CHALLENGE QUESTIONS ───
+const usedQuestions = new Set();
+const MAX_USED_HISTORY = 100;
+
 // ─── HELPER: Generate content ───
 async function generateResponse(prompt, temperature = 0.7, maxTokens = 500) {
     const cacheKey = `${prompt}-${temperature}-${maxTokens}`;
@@ -111,7 +115,6 @@ async function generateJSON(prompt, temperature = 0.3, maxTokens = 800) {
         });
         const text = completion.choices[0].message.content;
         
-        // Try to extract JSON from the response
         let jsonMatch = text.match(/\{[\s\S]*\}/);
         let result;
         if (jsonMatch) {
@@ -134,6 +137,14 @@ setInterval(() => {
             cache.delete(key);
         }
     }
+    // Clean old used questions
+    if (usedQuestions.size > MAX_USED_HISTORY) {
+        const toRemove = usedQuestions.size - MAX_USED_HISTORY;
+        const iterator = usedQuestions.values();
+        for (let i = 0; i < toRemove; i++) {
+            usedQuestions.delete(iterator.next().value);
+        }
+    }
 }, 60000);
 
 // ════════════════════════════════════════════════
@@ -150,7 +161,8 @@ app.get('/api/health', (req, res) => {
         apiKeySet: keyValid,
         provider: 'NVIDIA NIM',
         model: FREE_MODEL,
-        cacheSize: cache.size
+        cacheSize: cache.size,
+        usedQuestionsCount: usedQuestions.size
     });
 });
 
@@ -209,184 +221,250 @@ app.post('/api/analyze', async (req, res) => {
     }
 });
 
-// ─── GENERATE CHALLENGE (FIXED) ───
+// ─── GENERATE CHALLENGE (FIXED - NO REPEATS) ───
 app.post('/api/challenge', async (req, res) => {
     if (!API_KEY || !API_KEY.startsWith('nvapi-')) {
         return res.status(500).json({ error: 'Invalid NVIDIA NIM API key. Keys must start with "nvapi-..."' });
     }
 
-    // Clear cache for challenge to ensure fresh questions
+    // Clear challenge cache to ensure freshness
     for (const [key] of cache.entries()) {
         if (key.includes('challenge')) {
             cache.delete(key);
         }
     }
 
-    const prompt = `Generate a challenging trivia question about science, history, or general knowledge.
-    
+    const usedQuestionsList = Array.from(usedQuestions);
+    const avoidPrompt = usedQuestionsList.length > 0 
+        ? `\n\nAVOID these previously used questions:\n${usedQuestionsList.slice(-10).join('\n')}` 
+        : '';
+
+    const prompt = `Generate a unique and interesting TRUE/FALSE trivia question about science, history, geography, or general knowledge.
+
     IMPORTANT RULES:
-    1. The question should be INTERESTING and NOT OBVIOUS
-    2. The answer should be a clear TRUE or FALSE
-    3. For about 50% of questions, the AI should give the CORRECT answer
-    4. For about 50% of questions, the AI should give the WRONG answer (hallucination)
-    5. The AI must deliver its answer CONFIDENTLY regardless of correctness
-    6. The "correct_answer" field MUST be the actual factual truth ("True" or "False")
-    7. The "ai_answer" field should be a confident statement that may be true or false
+    1. The question MUST be UNIQUE - never used before
+    2. The question should be CHALLENGING and NOT OBVIOUS
+    3. The AI should give a CONFIDENT answer that may be CORRECT or INCORRECT (mix it up 50/50)
+    4. The "correct_answer" MUST be the actual factual truth ("True" or "False")
+    5. The "ai_answer" should be a detailed, confident statement
+    6. The "explanation" must be detailed with verified facts
+    7. Make the AI's answer sound convincing even when wrong!
     
-    AVOID these overused myths: 10% brain, Great Wall from space, bulls hate red, Napoleon was short, Vikings horned helmets
+    AVOID these overused myths: 10% brain, Great Wall from space, bulls hate red, Napoleon was short, Vikings horned helmets, water boils at 100°C
     
+    ${avoidPrompt}
+
     Return ONLY valid JSON. No markdown, no code blocks, no extra text.
     
     Format:
     {
-        "question": "The trivia question (as a statement)",
-        "ai_answer": "AI's confident answer (True or False statement)",
+        "question": "The trivia question (as a statement that can be true or false)",
+        "ai_answer": "A detailed, confident answer from the AI (True or False statement with reasoning)",
         "correct_answer": "True or False (the actual correct answer)",
-        "explanation": "Clear explanation with verified facts"
+        "explanation": "Detailed explanation with verified facts and context"
     }
     
-    IMPORTANT: The "correct_answer" must match the actual factual truth!`;
+    Example of AI being WRONG:
+    {
+        "question": "Do sharks have bones?",
+        "ai_answer": "Yes, sharks have a complete skeleton made of 206 bones, similar to humans. This allows them to maintain their shape and structure in the water.",
+        "correct_answer": "False",
+        "explanation": "Sharks have no bones at all. Their skeletons are made entirely of cartilage, which is lighter and more flexible than bone."
+    }
+    
+    Example of AI being CORRECT:
+    {
+        "question": "Is the capital of Australia Sydney?",
+        "ai_answer": "No, the capital of Australia is Canberra. Sydney is the largest city but not the capital. Canberra was specifically chosen as a compromise between Sydney and Melbourne.",
+        "correct_answer": "False",
+        "explanation": "The capital of Australia is Canberra, established in 1908 as a compromise between Sydney and Melbourne. Sydney is the largest city but not the capital."
+    }`;
 
     try {
-        // Use a higher temperature for more variety
-        const result = await generateJSON(prompt, 0.9, 700);
+        const result = await generateJSON(prompt, 0.95, 700);
         
-        // Validate the response
+        // Validate and store the question
         if (result && result.question && result.ai_answer && result.correct_answer && result.explanation) {
+            const questionText = result.question.toLowerCase().trim();
+            
+            // Check if this question was used before
+            if (usedQuestions.has(questionText)) {
+                console.log('⚠️ Duplicate question detected, regenerating...');
+                // Regenerate with a different prompt
+                const retryPrompt = `Generate a completely different trivia question. Never use this one: "${result.question}"
+                
+                Rules:
+                - Must be a TRUE/FALSE question
+                - Make it interesting and challenging
+                - Return JSON with: question, ai_answer (detailed), correct_answer ("True"/"False"), explanation (detailed)`;
+                
+                const retryResult = await generateJSON(retryPrompt, 0.95, 700);
+                if (retryResult && retryResult.question && retryResult.ai_answer) {
+                    const retryQuestion = retryResult.question.toLowerCase().trim();
+                    if (!usedQuestions.has(retryQuestion)) {
+                        const correct = retryResult.correct_answer.toLowerCase().trim();
+                        retryResult.correct_answer = (correct === 'true' || correct === 'yes' || correct === 't') ? 'True' : 'False';
+                        usedQuestions.add(retryQuestion);
+                        console.log(`✅ Unique challenge generated (${usedQuestions.size} total): ${retryResult.question}`);
+                        res.json(retryResult);
+                        return;
+                    }
+                }
+            }
+            
             // Normalize the correct_answer
             const correct = result.correct_answer.toLowerCase().trim();
             if (correct === 'true' || correct === 'yes' || correct === 't') {
                 result.correct_answer = 'True';
-                console.log('✅ Challenge generated (correct: True)');
-                console.log(`📝 Question: ${result.question}`);
-                console.log(`🤖 AI Says: ${result.ai_answer}`);
-                res.json(result);
-                return;
             } else if (correct === 'false' || correct === 'no' || correct === 'f') {
                 result.correct_answer = 'False';
-                console.log('✅ Challenge generated (correct: False)');
-                console.log(`📝 Question: ${result.question}`);
-                console.log(`🤖 AI Says: ${result.ai_answer}`);
-                res.json(result);
-                return;
-            }
-        }
-        
-        // If validation fails, try a simpler prompt
-        console.log('⚠️ Invalid format from first attempt, trying simpler prompt...');
-        const simplePrompt = `Generate a simple TRUE/FALSE trivia question. 
-        The answer must be a well-known fact.
-        Return JSON with: question, ai_answer (either "True" or "False" as a statement), correct_answer ("True" or "False"), explanation.
-        
-        Example: {"question": "The Earth is flat.", "ai_answer": "The Earth is flat.", "correct_answer": "False", "explanation": "The Earth is actually an oblate spheroid."}`;
-        
-        const simpleResult = await generateJSON(simplePrompt, 0.9, 500);
-        
-        if (simpleResult && simpleResult.question && simpleResult.ai_answer && simpleResult.correct_answer && simpleResult.explanation) {
-            const correct = simpleResult.correct_answer.toLowerCase().trim();
-            if (correct === 'true' || correct === 'yes' || correct === 't') {
-                simpleResult.correct_answer = 'True';
-                console.log('✅ Simple challenge generated');
-                res.json(simpleResult);
-                return;
-            } else if (correct === 'false' || correct === 'no' || correct === 'f') {
-                simpleResult.correct_answer = 'False';
-                console.log('✅ Simple challenge generated');
-                res.json(simpleResult);
-                return;
-            }
-        }
-        
-        // If still invalid, try once more with a very explicit format
-        console.log('⚠️ Still invalid, trying final attempt...');
-        const finalPrompt = `Create a trivia question. Return ONLY this JSON format:
-        {
-            "question": "Your question here",
-            "ai_answer": "Your AI answer here",
-            "correct_answer": "True or False",
-            "explanation": "Your explanation here"
-        }
-        
-        Question: "Is water wet?"
-        AI Answer: "Water is wet."
-        Correct Answer: "False"
-        Explanation: "Water is not wet. Wetness is a property of surfaces when water interacts with them."`;
-        
-        const finalResult = await generateJSON(finalPrompt, 0.9, 400);
-        
-        if (finalResult && finalResult.question && finalResult.ai_answer && finalResult.correct_answer && finalResult.explanation) {
-            const correct = finalResult.correct_answer.toLowerCase().trim();
-            if (correct === 'true' || correct === 'yes' || correct === 't') {
-                finalResult.correct_answer = 'True';
             } else {
-                finalResult.correct_answer = 'False';
+                // Default to False if unclear
+                result.correct_answer = 'False';
             }
-            console.log('✅ Final challenge generated');
-            res.json(finalResult);
+            
+            // Store the question
+            usedQuestions.add(questionText);
+            console.log(`✅ Unique challenge generated (${usedQuestions.size} total): ${result.question}`);
+            console.log(`🤖 AI says: ${result.ai_answer.substring(0, 100)}...`);
+            console.log(`📖 Correct answer: ${result.correct_answer}`);
+            res.json(result);
             return;
         }
         
-        // If all attempts fail, return a fresh generated question from the API
-        console.log('⚠️ All structured attempts failed, using direct API response');
-        const directPrompt = `Generate a trivia question. Make it interesting. The correct answer is either True or False.`;
-        const directText = await generateResponse(directPrompt, 0.8, 300);
+        // If validation fails, try a simpler approach
+        console.log('⚠️ Invalid format, trying simpler prompt...');
+        const simplePrompt = `Generate a unique TRUE/FALSE trivia question about an interesting scientific fact or historical event.
+        Return JSON with: question, ai_answer (detailed confident statement), correct_answer ("True"/"False"), explanation (detailed with facts).
+        Make the AI's answer convincing even if wrong!`;
         
-        // Try to parse the response as JSON
+        const simpleResult = await generateJSON(simplePrompt, 0.9, 600);
+        if (simpleResult && simpleResult.question && simpleResult.ai_answer && simpleResult.correct_answer) {
+            const simpleQuestion = simpleResult.question.toLowerCase().trim();
+            if (!usedQuestions.has(simpleQuestion)) {
+                const correct = simpleResult.correct_answer.toLowerCase().trim();
+                simpleResult.correct_answer = (correct === 'true' || correct === 'yes' || correct === 't') ? 'True' : 'False';
+                usedQuestions.add(simpleQuestion);
+                console.log(`✅ Simple challenge generated: ${simpleResult.question}`);
+                res.json(simpleResult);
+                return;
+            }
+        }
+        
+        // Final attempt with explicit format
+        console.log('⚠️ Still invalid, trying final attempt...');
+        const finalPrompt = `Create a trivia question about a scientific misconception. Format as JSON:
+        {
+            "question": "Your question here",
+            "ai_answer": "Detailed confident answer from AI",
+            "correct_answer": "True or False",
+            "explanation": "Detailed explanation"
+        }
+        
+        Make it about something interesting and surprising.`;
+        
+        const finalResult = await generateJSON(finalPrompt, 0.9, 500);
+        if (finalResult && finalResult.question && finalResult.ai_answer && finalResult.correct_answer) {
+            const finalQuestion = finalResult.question.toLowerCase().trim();
+            if (!usedQuestions.has(finalQuestion)) {
+                const correct = finalResult.correct_answer.toLowerCase().trim();
+                finalResult.correct_answer = (correct === 'true' || correct === 'yes' || correct === 't') ? 'True' : 'False';
+                usedQuestions.add(finalQuestion);
+                console.log(`✅ Final challenge generated: ${finalResult.question}`);
+                res.json(finalResult);
+                return;
+            }
+        }
+        
+        // Generate a fresh unique question using direct API
+        console.log('⚠️ All structured attempts failed, using direct API...');
+        const directPrompt = `Generate a unique and interesting TRUE/FALSE trivia question about science or history. Make it challenging.`;
+        const directText = await generateResponse(directPrompt, 0.8, 400);
+        
         try {
             const parsed = JSON.parse(directText);
             if (parsed.question && parsed.ai_answer && parsed.correct_answer) {
-                const correct = parsed.correct_answer.toLowerCase().trim();
-                parsed.correct_answer = (correct === 'true' || correct === 'yes' || correct === 't') ? 'True' : 'False';
-                res.json(parsed);
-                return;
+                const qText = parsed.question.toLowerCase().trim();
+                if (!usedQuestions.has(qText)) {
+                    const correct = parsed.correct_answer.toLowerCase().trim();
+                    parsed.correct_answer = (correct === 'true' || correct === 'yes' || correct === 't') ? 'True' : 'False';
+                    usedQuestions.add(qText);
+                    res.json(parsed);
+                    return;
+                }
             }
         } catch (e) {
-            // Not JSON, create a structured response from the text
-            const fallback = {
-                question: directText.substring(0, 100) + '...',
-                ai_answer: directText,
-                correct_answer: Math.random() > 0.5 ? 'True' : 'False',
-                explanation: 'Based on the AI\'s response above.'
-            };
-            console.log('📝 Using fallback from direct response');
-            res.json(fallback);
-            return;
+            // Not JSON, create structured response
+            const fallbackQuestion = directText.substring(0, 150);
+            const qText = fallbackQuestion.toLowerCase().trim();
+            if (!usedQuestions.has(qText)) {
+                const fallback = {
+                    question: fallbackQuestion,
+                    ai_answer: directText.substring(150, 400) || directText,
+                    correct_answer: Math.random() > 0.5 ? 'True' : 'False',
+                    explanation: 'Based on the AI\'s generated content above.'
+                };
+                usedQuestions.add(qText);
+                res.json(fallback);
+                return;
+            }
         }
         
-        // Ultimate fallback - this should rarely happen
-        const ultimateFallback = {
-            question: `Is the boiling point of water at sea level 100°C (212°F)?`,
-            ai_answer: Math.random() > 0.5 ? 'Yes, water boils at 100°C at sea level.' : 'No, water boils at 90°C at sea level.',
-            correct_answer: 'True',
-            explanation: 'At standard atmospheric pressure (sea level), pure water boils at exactly 100°C (212°F).'
-        };
-        console.log('⚠️ Using ultimate fallback');
-        res.json(ultimateFallback);
+        // Ultimate fallback - generate a new unique question
+        console.log('⚠️ Using ultimate fallback with fresh question');
+        const topics = ['space', 'animals', 'history', 'geography', 'science', 'technology', 'art', 'music', 'food', 'sports'];
+        const topic = topics[Math.floor(Math.random() * topics.length)];
+        const fallbackPrompt = `Generate a unique trivia question about ${topic}. Make it TRUE/FALSE. Return JSON format.`;
+        const fallbackText = await generateResponse(fallbackPrompt, 0.8, 300);
+        
+        try {
+            const parsed = JSON.parse(fallbackText);
+            if (parsed.question) {
+                const qText = parsed.question.toLowerCase().trim();
+                if (!usedQuestions.has(qText)) {
+                    usedQuestions.add(qText);
+                    res.json(parsed);
+                    return;
+                }
+            }
+        } catch (e) {
+            // Create a fallback that's guaranteed unique by including timestamp
+            const uniqueFallback = {
+                question: `Is it true that ${topic} has been studied for over 100 years? (Generated: ${Date.now()})`,
+                ai_answer: Math.random() > 0.5 ? 
+                    `Yes, ${topic} has been a subject of study for over a century with extensive research.` :
+                    `No, ${topic} is actually a relatively new field of study.`,
+                correct_answer: Math.random() > 0.5 ? 'True' : 'False',
+                explanation: `This is a generated question about ${topic} to ensure uniqueness.`
+            };
+            const qText = uniqueFallback.question.toLowerCase().trim();
+            usedQuestions.add(qText);
+            res.json(uniqueFallback);
+        }
         
     } catch (error) {
         console.error('Error in /api/challenge:', error);
-        // Return a fresh question from the API rather than hardcoded fallback
-        try {
-            const emergencyPrompt = `Generate a fresh trivia question about science. Make it a True/False question.`;
-            const emergencyText = await generateResponse(emergencyPrompt, 0.8, 300);
-            const emergencyFallback = {
-                question: emergencyText.substring(0, 150),
-                ai_answer: emergencyText,
-                correct_answer: Math.random() > 0.5 ? 'True' : 'False',
-                explanation: 'Generated by AI.'
-            };
-            res.json(emergencyFallback);
-        } catch (e) {
-            // Only use hardcoded fallback if API completely fails
-            const fallback = {
-                question: "Does water freeze at 0°C (32°F) at sea level?",
-                ai_answer: Math.random() > 0.5 ? "Yes, water freezes at 0°C at sea level." : "No, water freezes at -10°C at sea level.",
-                correct_answer: "True",
-                explanation: "At standard atmospheric pressure (sea level), pure water freezes at exactly 0°C (32°F)."
-            };
-            res.json(fallback);
-        }
+        // Generate a fresh fallback with timestamp for uniqueness
+        const timestampFallback = {
+            question: `Is water the most abundant substance on Earth? (Generated: ${Date.now()})`,
+            ai_answer: Math.random() > 0.5 ? 
+                "Yes, water covers approximately 71% of Earth's surface, making it the most abundant substance." :
+                "No, while water is abundant, it's actually not the most abundant substance on Earth.",
+            correct_answer: 'False',
+            explanation: "While water covers 71% of Earth's surface, it's not the most abundant substance. The Earth's mantle contains more mass in the form of silicate minerals."
+        };
+        const qText = timestampFallback.question.toLowerCase().trim();
+        usedQuestions.add(qText);
+        res.json(timestampFallback);
     }
+});
+
+// ─── GET CHALLENGE HISTORY (for debugging) ───
+app.get('/api/challenge-history', (req, res) => {
+    res.json({
+        totalUsed: usedQuestions.size,
+        recentQuestions: Array.from(usedQuestions).slice(-10)
+    });
 });
 
 // ─── SERVE INDEX.HTML ───
@@ -406,5 +484,6 @@ app.listen(PORT, () => {
     const keyValid = !!(API_KEY && API_KEY.startsWith('nvapi-'));
     console.log(`✅ API Key: ${keyValid ? '✓ Valid (nvapi-...)' : '✗ Invalid'}`);
     console.log(`📦 Cache: Enabled`);
-    console.log(`🎯 Challenge Mode: Fresh AI-generated questions`);
+    console.log(`🎯 Challenge Mode: Fresh AI-generated questions (no repeats)`);
+    console.log(`📝 Used questions tracking: ${usedQuestions.size} questions stored`);
 });
