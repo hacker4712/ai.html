@@ -1491,7 +1491,8 @@
             runHero();
 
             // ── API CONFIG ──
-            const API_BASE = '';
+            // CHANGE THIS TO YOUR BACKEND URL
+            const API_BASE = 'http://localhost:3000';
 
             // ── LAB FUNCTIONALITY ──
             const labQ = document.getElementById('lab-q');
@@ -1513,101 +1514,29 @@
                 dashC = 0,
                 dashU = 0;
 
-            // ─── FACT-CHECK WITH DUCKDUCKGO ───
-            async function factCheckClaim(claim) {
-                const url = `${API_BASE}/api/fact-check`;
-                
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ claim: claim })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    
-                    return await response.json();
-                } catch (error) {
-                    console.error('Fact-check error:', error);
-                    return null;
-                }
-            }
-
-            // ─── DISPLAY REAL SOURCES ───
-            function displayRealSources(sources, container, isUnsupported = false) {
-                if (!sources || sources.length === 0) {
-                    container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.75rem;">No sources found</span>';
-                    return;
-                }
-                
-                let html = '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">';
-                sources.forEach(source => {
-                    let title = source.title || 'Source';
-                    if (title.length > 80) title = title.substring(0, 80) + '...';
-                    
-                    html += `
-                        <a href="${source.url}" target="_blank" style="
-                            font-family: var(--font-mono);
-                            font-size: 0.55rem;
-                            padding: 0.15rem 0.6rem;
-                            border-radius: 1rem;
-                            background: ${isUnsupported ? 'rgba(255,59,92,0.08)' : 'rgba(46,204,113,0.08)'};
-                            border: 1px solid ${isUnsupported ? 'rgba(255,59,92,0.15)' : 'rgba(46,204,113,0.15)'};
-                            color: ${isUnsupported ? 'var(--accent)' : 'var(--green)'};
-                            text-decoration: none;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 0.25rem;
-                            transition: all 0.3s ease;
-                            max-width: 100%;
-                            word-break: break-all;
-                        "
-                        onmouseover="this.style.background='${isUnsupported ? 'rgba(255,59,92,0.2)' : 'rgba(46,204,113,0.2)'}'"
-                        onmouseout="this.style.background='${isUnsupported ? 'rgba(255,59,92,0.08)' : 'rgba(46,204,113,0.08)'}'"
-                        >
-                            🔗 ${title}
-                        </a>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            }
-
-            // ─── API HELPER ───
+            // ─── API HELPERS ───
             async function callApi(endpoint, data) {
                 const url = `${API_BASE}${endpoint}`;
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data || {})
-                    });
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(errorData.error || `HTTP ${res.status}`);
-                    }
-                    return await res.json();
-                } catch (err) {
-                    console.error(`❌ API Error:`, err);
-                    throw err;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data || {})
+                });
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${res.status}`);
                 }
+                return await res.json();
             }
 
             async function callApiGet(endpoint) {
                 const url = `${API_BASE}${endpoint}`;
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(errorData.error || `HTTP ${res.status}`);
-                    }
-                    return await res.json();
-                } catch (err) {
-                    console.error(`❌ API Error:`, err);
-                    throw err;
+                const res = await fetch(url);
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${res.status}`);
                 }
+                return await res.json();
             }
 
             async function checkHealth() {
@@ -1628,7 +1557,6 @@
                 }
             }
 
-            // ─── Show loading animation in lab ───
             function showLabLoading() {
                 labA.innerHTML = `
                     <div class="lab-loading">
@@ -1638,10 +1566,10 @@
                 `;
             }
 
-            // ─── Ask AI ───
+            // ─── ASK AI ───
             async function askAI(question) {
                 if (!question || question.trim().length === 0) return;
-                
+
                 currentQuestion = question;
                 labQ.textContent = question;
                 labXray.style.display = 'none';
@@ -1650,12 +1578,11 @@
 
                 try {
                     const data = await callApi('/api/ask', { question });
-                    
+
                     if (data && data.answer) {
                         currentAnswer = data.answer;
                         labA.textContent = data.answer;
-                        
-                        // Show confidence
+
                         if (data.confidence) {
                             labConf.style.display = 'block';
                             const pct = Math.min(100, Math.round(data.confidence * 100));
@@ -1664,7 +1591,7 @@
                         } else {
                             labConf.style.display = 'none';
                         }
-                        
+
                         xrayBtn.disabled = false;
                         dashQ++;
                         document.getElementById('dash-questions').textContent = dashQ;
@@ -1676,7 +1603,7 @@
                 }
             }
 
-            // ─── X-Ray ───
+            // ─── X-RAY ───
             async function xrayAnswer() {
                 if (!currentAnswer || currentAnswer.length === 0) {
                     labClaims.innerHTML = '<div class="error-msg">No answer to x-ray. Ask a question first.</div>';
@@ -1694,21 +1621,21 @@
                 labXray.style.display = 'block';
 
                 try {
-                    const data = await callApi('/api/xray', { 
+                    const data = await callApi('/api/xray', {
                         question: currentQuestion,
-                        answer: currentAnswer 
+                        answer: currentAnswer
                     });
-                    
+
                     if (data && data.claims) {
                         let html = '';
                         let unsupportedCount = 0;
-                        
-                        data.claims.forEach((claim, index) => {
+
+                        data.claims.forEach((claim) => {
                             const badgeClass = claim.verdict === 'supported' ? 'supported' :
-                                               claim.verdict === 'context' ? 'context' : 'unsupported';
-                            
+                                claim.verdict === 'context' ? 'context' : 'unsupported';
+
                             if (claim.verdict === 'unsupported') unsupportedCount++;
-                            
+
                             html += `
                                 <div class="xray-claim">
                                     <div class="claim-header">
@@ -1720,24 +1647,9 @@
                                     </div>
                                     <div class="sources">
                                         <span class="sources-label">📎 Sources:</span>
-                                        ${claim.sources && claim.sources.length > 0 ? 
+                                        ${claim.sources && claim.sources.length > 0 ?
                                             claim.sources.map(s => `
-                                                <a href="${s.url}" target="_blank" style="
-                                                    font-family: var(--font-mono);
-                                                    font-size: 0.55rem;
-                                                    padding: 0.15rem 0.6rem;
-                                                    border-radius: 1rem;
-                                                    background: ${claim.verdict === 'unsupported' ? 'rgba(255,59,92,0.08)' : 'rgba(46,204,113,0.08)'};
-                                                    border: 1px solid ${claim.verdict === 'unsupported' ? 'rgba(255,59,92,0.15)' : 'rgba(46,204,113,0.15)'};
-                                                    color: ${claim.verdict === 'unsupported' ? 'var(--accent)' : 'var(--green)'};
-                                                    text-decoration: none;
-                                                    display: inline-flex;
-                                                    align-items: center;
-                                                    gap: 0.25rem;
-                                                    transition: all 0.3s ease;
-                                                    max-width: 100%;
-                                                    word-break: break-all;
-                                                ">
+                                                <a href="${s.url}" target="_blank" class="source-link ${claim.verdict === 'unsupported' ? 'unsupported-source' : ''}">
                                                     🔗 ${s.title || s.url}
                                                 </a>
                                             `).join('') :
@@ -1747,17 +1659,16 @@
                                 </div>
                             `;
                         });
-                        
+
                         labClaims.innerHTML = html;
                         dashC += data.claims.length;
                         dashU += unsupportedCount;
                         document.getElementById('dash-claims').textContent = dashC;
                         document.getElementById('dash-unsupported').textContent = dashU;
-                        
-                        const errorRate = dashQ > 0 ? Math.round((dashU / dashC) * 100) : 0;
+
+                        const errorRate = dashC > 0 ? Math.round((dashU / dashC) * 100) : 0;
                         document.getElementById('dash-error').textContent = errorRate + '%';
-                        
-                        // Bottom line
+
                         if (data.correction) {
                             labCorrection.textContent = data.correction;
                         } else if (unsupportedCount > 0) {
@@ -1775,7 +1686,7 @@
                 }
             }
 
-            // ─── Event Listeners ───
+            // ─── EVENT LISTENERS ───
             askBtn.addEventListener('click', () => {
                 const q = customInput.value.trim();
                 if (q) askAI(q);
@@ -1800,17 +1711,19 @@
 
             xrayBtn.addEventListener('click', xrayAnswer);
 
-            // ─── CHALLENGE SECTION ───
+            // ─── CHALLENGE ───
             const challengeGrid = document.getElementById('challenge-grid');
             const newChallengeBtn = document.getElementById('new-challenge-btn');
             const apiMessage = document.getElementById('api-message');
 
-            let challengeData = null;
             let challengeAnswered = false;
+            let currentChallengeData = null;
 
             async function generateChallenge() {
                 challengeAnswered = false;
+                currentChallengeData = null;
                 apiMessage.classList.remove('show');
+
                 challengeGrid.innerHTML = `
                     <div class="challenge-loading">
                         <div class="loader"></div>
@@ -1819,8 +1732,8 @@
                 `;
 
                 try {
-                    const data = await callApi('/api/challenge');
-                    challengeData = data;
+                    const data = await callApi('/api/challenge', {});
+                    currentChallengeData = data;
                     renderChallenge(data);
                 } catch (error) {
                     challengeGrid.innerHTML = `
@@ -1829,7 +1742,7 @@
                                 ❌ Failed to generate challenge: ${error.message}
                             </div>
                             <div style="text-align:center;margin-top:0.5rem;">
-                                <button class="btn btn-primary" onclick="window.location.reload()">🔄 Try Again</button>
+                                <button class="btn btn-primary" onclick="location.reload()">🔄 Try Again</button>
                             </div>
                         </div>
                     `;
@@ -1842,7 +1755,6 @@
                 const isTrue = data.isTrue;
                 const answerText = data.answer || data.aiAnswer || 'The AI says this is true.';
                 const questionText = data.question || 'Is this statement true or false?';
-                const correctAnswer = isTrue ? 'True' : 'False';
                 const explanation = data.explanation || 'No explanation provided.';
 
                 let html = `
@@ -1868,20 +1780,17 @@
 
                 challengeGrid.innerHTML = html;
 
-                // Add event listeners to guess buttons
                 document.querySelectorAll('.guess-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        if (challengeAnswered) return;
+                        if (challengeAnswered || !currentChallengeData) return;
                         challengeAnswered = true;
-                        
+
                         const guess = this.dataset.guess === 'true';
-                        const correct = data.isTrue;
+                        const correct = currentChallengeData.isTrue;
                         const isCorrect = guess === correct;
-                        
-                        // Disable both buttons
+
                         document.querySelectorAll('.guess-btn').forEach(b => b.disabled = true);
-                        
-                        // Highlight correct/wrong
+
                         document.querySelectorAll('.guess-btn').forEach(b => {
                             const bGuess = b.dataset.guess === 'true';
                             if (bGuess === correct) {
@@ -1890,16 +1799,14 @@
                                 b.classList.add('wrong-choice');
                             }
                         });
-                        
-                        // Show result
+
                         const resultDiv = document.getElementById('challenge-result');
                         if (isCorrect) {
                             resultDiv.innerHTML = `<div class="result-text correct">✅ Correct! You caught it.</div>`;
                         } else {
                             resultDiv.innerHTML = `<div class="result-text wrong">❌ The AI was ${correct ? 'correct' : 'wrong'}. You guessed ${guess ? 'True' : 'False'}.</div>`;
                         }
-                        
-                        // Show reveal
+
                         document.getElementById('challenge-reveal').classList.add('show');
                     });
                 });
@@ -1909,8 +1816,6 @@
 
             // ─── INIT ───
             checkHealth();
-            
-            // Load initial challenge
             setTimeout(generateChallenge, 500);
 
         })();
